@@ -1,3 +1,9 @@
 pyenv/*
 *.pyc
 .vscode
+placepulse/*
+.ipynb_checkpoints
+votes.csv
+votes_clean.csv
+model.pth
+models/*
