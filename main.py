@@ -43,9 +43,9 @@ class PlacePulseDataset(Dataset):
         
         if type(idx) == torch.Tensor:
             idx = idx.tolist()
-        left_img_name = os.path.join(self.img_dir, f'{self.placepulse_data.iloc[idx, 0]}.jpg')
+        left_img_name = os.path.join(self.img_dir, '{}.jpg'.format(self.placepulse_data.iloc[idx, 0]))
         left_image = io.imread(left_img_name)
-        right_img_name = os.path.join(self.img_dir, f'{self.placepulse_data.iloc[idx, 1]}.jpg')
+        right_img_name = os.path.join(self.img_dir, '{}.jpg'.format(self.placepulse_data.iloc[idx, 1]))
         right_image = io.imread(right_img_name)
         winner = self.label[self.placepulse_data.iloc[idx, 2]]
         cat = self.placepulse_data.iloc[idx, -1]
