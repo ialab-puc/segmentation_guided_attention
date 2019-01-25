@@ -162,7 +162,7 @@ from ignite.handlers import ModelCheckpoint
 
 clf_crit = nn.NLLLoss()
 rank_crit = nn.MarginRankingLoss(reduction='sum')
-optimizer = optim.SGD(net.parameters(), lr=0.0001, momentum=0.9)
+optimizer = optim.SGD(net.parameters(), lr=0.001, momentum=0.9)
 lamb = 0.5
 
 def update(engine, data):
@@ -236,7 +236,7 @@ def log_validation_results(trainer):
 #     print("Training Results - Epoch: {}  Avg accuracy: {:.2f} Avg loss: {:.2f}".format(trainer.state.epoch, metrics['avg_acc'], metrics['loss']))
 
 
-handler = ModelCheckpoint('models', 'test', save_interval=2, n_saved=2, create_dir=True, save_as_state_dict=True, require_empty=False)
+handler = ModelCheckpoint('models', 'test', save_interval=1, n_saved=2, create_dir=True, save_as_state_dict=True, require_empty=False)
 trainer.add_event_handler(Events.EPOCH_COMPLETED, handler, {
             'model': net,
             'optimizer': optimizer,
