@@ -88,32 +88,32 @@ class RSsCnn(nn.Module):
     def __init__(self):
         super(RSsCnn, self).__init__()
         #shouldbe vgg19
-        self.cnn = models.alexnet(pretrained=True).features
+        self.cnn = models.vgg19(pretrained=True).features
         #self.cnn.train() # to finetune pretrained model
-        self.fuse_conv_1 = nn.Conv2d(512,512,3)
-        self.fuse_conv_2 = nn.Conv2d(512,512,3)
-        self.fuse_conv_3 = nn.Conv2d(512,512,2)
-        self.fuse_fc = nn.Linear(512, 2)
+        self.fuse_conv_1 = nn.Conv2d(1024,1024,3)
+        self.fuse_conv_2 = nn.Conv2d(1024,1024,3)
+        self.fuse_conv_3 = nn.Conv2d(1024,1024,2)
+        self.fuse_fc = nn.Linear(1024*4, 2)
         self.classifier = nn.LogSoftmax(dim=1)
-        self.rank_fc_1 = nn.Linear(256*6*6, 4096)
+        self.rank_fc_1 = nn.Linear(512*7*7, 4096)
         self.rank_fc_2 = nn.Linear(4096, 1)
     
     def forward(self,left_image, right_image):
         batch_size = left_image.size()[0]
         left = self.cnn(left_image)
         right = self.cnn(right_image)
-#         print(left.size())
         x = torch.cat((left,right),1)
         x = self.fuse_conv_1(x)
         x = self.fuse_conv_2(x)
-#         print(x.size())
+        print(x.size())
         x = self.fuse_conv_3(x)
-#         print(x.size())
-        x = x.view(batch_size,512)
+        print(x.size())
+        x = x.view(batch_size,1024*4)
         x_clf = self.fuse_fc(x)
         x_clf = self.classifier(x_clf)
-        x_rank_left = left.view(batch_size,256*6*6)
-        x_rank_right = right.view(batch_size,256*6*6)
+        
+        x_rank_left = left.view(batch_size,512*7*7)
+        x_rank_right = right.view(batch_size,512*7*7)
         x_rank_left = self.rank_fc_1(x_rank_left)
         x_rank_right = self.rank_fc_1(x_rank_right)
         x_rank_left = self.rank_fc_2(x_rank_left)
@@ -136,23 +136,25 @@ val_loader = DataLoader(val, batch_size=32,
 
 
 # device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-# net = RSsCnn()
-# net = net.to(device)
+device = torch.device('cpu')
+
+#device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+net = RSsCnn()
+net = net.to(device)
 
 #torch ignite resume training
-device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
-MODEL_PATH='models/test_model_state_dict_4.pth'
-OPTIMIZER_PATH='models/test_optimizer_state_dict_4.pth'
+# MODEL_PATH='models/test_model_state_dict_4.pth'
+# OPTIMIZER_PATH='models/test_optimizer_state_dict_4.pth'
 
-net = RSsCnn()
-optimizer = optim.SGD(net.parameters(), lr=0.0001, momentum=0.9)
-net.load_state_dict(torch.load(MODEL_PATH))
-optimizer.load_state_dict(torch.load(OPTIMIZER_PATH))
-epoch = 1
+# net = RSsCnn()
+# optimizer = optim.SGD(net.parameters(), lr=0.0001, momentum=0.9)
+# net.load_state_dict(torch.load(MODEL_PATH))
+# optimizer.load_state_dict(torch.load(OPTIMIZER_PATH))
+# epoch = 1
 
-net.train()
-net = net.to(device)
+# net.train()
+# net = net.to(device)
 
 # training with torch ignite
 from ignite.engine import Engine, Events, create_supervised_evaluator
