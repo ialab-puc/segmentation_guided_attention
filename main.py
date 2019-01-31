@@ -135,14 +135,23 @@ val_loader = DataLoader(val, batch_size=32,
                         shuffle=True, num_workers=4)
 
 
-# device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-device = torch.device('cpu')
 
-#device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+device = torch.device("cuda:1" if torch.cuda.is_available() else "cpu")
+
+
 net = RSsCnn()
 net = net.to(device)
 
 #torch ignite resume training
+#MODEL_PATH='models/test_model_state_dict_4.pth'
+#OPTIMIZER_PATH='models/test_optimizer_state_dict_4.pth'
+
+#net = RSsCnn()
+#optimizer = optim.SGD(net.parameters(), lr=0.0001, momentum=0.9)
+#net.load_state_dict(torch.load(MODEL_PATH))
+#optimizer.load_state_dict(torch.load(OPTIMIZER_PATH))
+#epoch = 1
+=======
 
 # MODEL_PATH='models/test_model_state_dict_4.pth'
 # OPTIMIZER_PATH='models/test_optimizer_state_dict_4.pth'
@@ -152,6 +161,7 @@ net = net.to(device)
 # net.load_state_dict(torch.load(MODEL_PATH))
 # optimizer.load_state_dict(torch.load(OPTIMIZER_PATH))
 # epoch = 1
+>>>>>>> e437527635511b3fdbc01932d324c8aa9fe1de27
 
 # net.train()
 # net = net.to(device)
