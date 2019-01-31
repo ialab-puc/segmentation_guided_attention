@@ -83,7 +83,6 @@ class Rescale():
                 'winner': sample['winner'],
                 'cat': sample['cat']}
         
-        return xlass RSsCnn(nn.Module):
 
 #SsCnn definition
 
@@ -96,20 +95,21 @@ class SsCnn(nn.Module):
         #self.cnn.train() # to finetune pretrained model
         self.fuse_conv_1 = nn.Conv2d(512,512,3)
         self.fuse_conv_2 = nn.Conv2d(512,512,3)
-        self.fuse_conv_3 = nn.Conv2d(512,512,3)
-        self.fuse_fc = nn.Linear(512*4*8, 2)
+        self.fuse_conv_3 = nn.Conv2d(512,512,2)
+        self.fuse_fc = nn.Linear(512, 2)
         self.classifier = nn.LogSoftmax(dim=1)
         
         
     
     def forward(self,left_image, right_image):
+        batch_size = left_image.size()[0]
         left = self.cnn(left_image)
         right = self.cnn(right_image)
         x = torch.cat((left,right),1)
         x = self.fuse_conv_1(x)
         x = self.fuse_conv_2(x)
         x = self.fuse_conv_3(x)
-        x = x.view(4,512*4*8)
+        x = x.view(batch_size,512)
         x = self.fuse_fc(x)
         x = self.classifier(x)
         return x
@@ -129,10 +129,8 @@ val_loader = DataLoader(val, batch_size=32,
                         shuffle=True, num_workers=4)
 
 
-# device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-device = torch.device('cpu')
-
-#device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+# device = torch.device('cpu')
 net = SsCnn()
 net = net.to(device)
 
@@ -156,8 +154,7 @@ from ignite.metrics import Accuracy,Loss, RunningAverage
 from ignite.contrib.handlers import ProgressBar
 from ignite.handlers import ModelCheckpoint
 
-clf_crit = nn.NLLLoss()
-rank_crit = nn.MarginRankingLoss(reduction='sum')
+criterion = nn.NLLLoss()
 optimizer = optim.SGD(net.parameters(), lr=0.001, momentum=0.9)
 lamb = 0.5
 
@@ -177,7 +174,7 @@ def update(engine, data):
     optimizer.step()
     return  { 'loss':loss.item(), 
             'y':label,
-            'y_pred': output_clf
+            'y_pred': outputs
             }
 
 def inference(engine,data):
@@ -194,7 +191,7 @@ def inference(engine,data):
         loss.backward()
     return  { 'loss':loss.item(), 
             'y':label,
-            'y_pred': output_clf
+            'y_pred': outputs
             }
 
 trainer = Engine(update)
@@ -223,7 +220,7 @@ def log_validation_results(trainer):
 #     print("Training Results - Epoch: {}  Avg accuracy: {:.2f} Avg loss: {:.2f}".format(trainer.state.epoch, metrics['avg_acc'], metrics['loss']))
 
 
-handler = ModelCheckpoint('models', 'test', save_interval=1, n_saved=2, create_dir=True, save_as_state_dict=True, require_empty=False)
+handler = ModelCheckpoint('ss_cnn_models', 'test', save_interval=1, n_saved=2, create_dir=True, save_as_state_dict=True, require_empty=False)
 trainer.add_event_handler(Events.EPOCH_COMPLETED, handler, {
             'model': net,
             'optimizer': optimizer,
