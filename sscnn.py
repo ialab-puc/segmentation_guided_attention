@@ -170,7 +170,7 @@ def update(engine, data):
     outputs = net(input_left,input_right)
 
     loss = criterion(outputs, label)
-    loss.to(device)
+
     loss.backward()
     optimizer.step()
     out_loss = loss.item()
@@ -179,7 +179,6 @@ def update(engine, data):
     inverse_label[inverse_label==-1] = 0
     inverse_outputs = net(input_right,input_left) #pass swapped input
     inverse_loss = criterion(inverse_outputs, inverse_label)
-    inverse_loss.to(device)
     inverse_loss.backward()
     optimizer.step()
 
@@ -198,8 +197,6 @@ def inference(engine,data):
         # forward
         outputs = net(input_left,input_right)
         loss = criterion(outputs, label)
-        loss.to(device)
-        loss.backward()
     return  { 'loss':loss.item(), 
             'y':label,
             'y_pred': outputs
