@@ -136,11 +136,11 @@ net = net.to(device)
 
 #torch ignite resume training
 
-# MODEL_PATH='models/test_model_state_dict_4.pth'
-# OPTIMIZER_PATH='models/test_optimizer_state_dict_4.pth'
+# MODEL_PATH='ss_cnn_models/test_model_4.pth'
+# OPTIMIZER_PATH='ss_cnn_models/test_optimizer_4.pth'
 
 # net = RSsCnn()
-# optimizer = optim.SGD(net.parameters(), lr=0.0001, momentum=0.9)
+# optimizer = optim.SGD(net.parameters(), lr=0.001, momentum=0.9)
 # net.load_state_dict(torch.load(MODEL_PATH))
 # optimizer.load_state_dict(torch.load(OPTIMIZER_PATH))
 # epoch = 1
@@ -161,6 +161,7 @@ lamb = 0.5
 def update(engine, data):
     input_left, input_right, label = data['left_image'], data['right_image'], data['winner']
     input_left, input_right, label = input_left.to(device), input_right.to(device), label.to(device)
+    inverse_label = label.clone()
     label[label==-1] = 0
     # zero the parameter gradients
     optimizer.zero_grad()
@@ -172,6 +173,16 @@ def update(engine, data):
     loss.to(device)
     loss.backward()
     optimizer.step()
+    out_loss = loss.item()
+    # reverse example
+    inverse_label*=-1
+    inverse_label[inverse_label==-1] = 0
+    inverse_outputs = net(input_left,input_right)
+    inverse_loss = criterion(inverse_outputs, inverse_label)
+    inverse_loss.to(device)
+    inverse_loss.backward()
+    optimizer.step()
+
     return  { 'loss':loss.item(), 
             'y':label,
             'y_pred': outputs
