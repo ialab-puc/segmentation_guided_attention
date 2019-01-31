@@ -9,3 +9,5 @@ model.pth
 models/*
 pyenv
 models
+placepulse.tar.xz
+placepulse
