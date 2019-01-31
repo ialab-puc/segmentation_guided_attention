@@ -214,7 +214,7 @@ pbar.attach(trainer,['loss','avg_acc'])
 def log_validation_results(trainer):
     evaluator.run(val_loader)
     metrics = evaluator.state.metrics
-    print("Training Results - Epoch: {}  Avg Val accuracy: {:.2f} Avg Val loss: {:.2f}".format(trainer.state.epoch, metrics['avg_acc'], metrics['loss']))
+    print("Training Results - Epoch: {}  Avg Val accuracy: {:.5f} Avg Val loss: {:.5f}".format(trainer.state.epoch, metrics['avg_acc'], metrics['loss']))
     
 # @trainer.on(Events.EPOCH_COMPLETED)
 # def log_training_results(trainer):
