@@ -175,9 +175,9 @@ def update(engine, data):
     optimizer.step()
     out_loss = loss.item()
     # reverse example
-    inverse_label*=-1
+    inverse_label*=-1 #swap label
     inverse_label[inverse_label==-1] = 0
-    inverse_outputs = net(input_left,input_right)
+    inverse_outputs = net(input_right,input_left) #pass swapped input
     inverse_loss = criterion(inverse_outputs, inverse_label)
     inverse_loss.to(device)
     inverse_loss.backward()
