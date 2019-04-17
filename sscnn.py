@@ -1,18 +1,15 @@
 # coding: utf-8
 
 ## dependencies
-import os
-import torch
-import pandas as pd
-from skimage import io, transform
-import numpy as np
-from torch.utils.data import Dataset, DataLoader, random_split
-from torchvision import transforms, utils
-import matplotlib.pyplot as plt
+
 import torchvision.models as models
 import torch.nn as nn
-import torch.nn.functional as F
-import torch.optim as optim
+from ignite.engine import Engine, Events
+from ignite.metrics import Accuracy,Loss, RunningAverage
+from ignite.contrib.handlers import ProgressBar
+from ignite.handlers import ModelCheckpoint
+
+
 
 from data import *
 
@@ -93,34 +90,10 @@ def inference(engine,data):
             'y_pred': outputs
             }
 
-def train(device):
-    # device = torch.device('cpu')
-    net = SsCnn()
+def train(device, net, loader,args):
     net = net.to(device)
-
-    #torch ignite resume training
-
-    # MODEL_PATH='ss_cnn_models/test_model_4.pth'
-    # OPTIMIZER_PATH='ss_cnn_models/test_optimizer_4.pth'
-
-    # net = RSsCnn()
-    # optimizer = optim.SGD(net.parameters(), lr=0.001, momentum=0.9)
-    # net.load_state_dict(torch.load(MODEL_PATH))
-    # optimizer.load_state_dict(torch.load(OPTIMIZER_PATH))
-    # epoch = 1
-
-    # net.train()
-    # net = net.to(device)
-
-    # training with torch ignite
-    from ignite.engine import Engine, Events, create_supervised_evaluator
-    from ignite.metrics import Accuracy,Loss, RunningAverage
-    from ignite.contrib.handlers import ProgressBar
-    from ignite.handlers import ModelCheckpoint
-
     criterion = nn.NLLLoss()
-    optimizer = optim.SGD(net.parameters(), lr=0.001, momentum=0.9)
-    lamb = 0.5
+    optimizer = optim.SGD(net.parameters(), lr=args.lr, momentum=0.9, weight_decay=args.wd)
 
     trainer = Engine(update)
     evaluator = Engine(inference)
@@ -141,11 +114,18 @@ def train(device):
         metrics = evaluator.state.metrics
         print("Training Results - Epoch: {}  Avg Val accuracy: {:.5f} Avg Val loss: {:.5f}".format(trainer.state.epoch, metrics['avg_acc'], metrics['loss']))
 
-    handler = ModelCheckpoint('ss_cnn_models', 'test', save_interval=1, n_saved=2, create_dir=True, save_as_state_dict=True, require_empty=False)
+    handler = ModelCheckpoint(f'{args.model_dir}', f'{args.model}_{args.attribute}', save_interval=1, n_saved=10, create_dir=True, save_as_state_dict=True, require_empty=False)
     trainer.add_event_handler(Events.EPOCH_COMPLETED, handler, {
                 'model': net,
                 'optimizer': optimizer,
                 })
+
+    if (args.resume):
+
+        def start_epoch(engine):
+            engine.state.epoch = args.epoch
+        trainer.add_event_handler(Events.STARTED, start_epoch)
+        evaluator.add_event_handler(Events.STARTED, start_epoch)
         
     trainer.run(dataloader,max_epochs=10)
 

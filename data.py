@@ -1,4 +1,5 @@
 ## Data loader class
+from torch.utils.data import Dataset
 
 class PlacePulseDataset(Dataset):
     
