@@ -64,7 +64,6 @@ if __name__ == '__main__':
     net = Net()
     if args.resume:
         net.load_state_dict(torch.load(os.path.join(args.model_dir,f'{args.model}_{args.attribute}_model_{args.epoch}.pth')))
-        epoch = args.epoch
     
     train(device,net,dataloader,val_loader, args)
 
