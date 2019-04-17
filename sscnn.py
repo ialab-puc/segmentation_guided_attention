@@ -4,6 +4,8 @@
 
 import torchvision.models as models
 import torch.nn as nn
+import torch.optim as optim
+import torch
 from ignite.engine import Engine, Events
 from ignite.metrics import Accuracy,Loss, RunningAverage
 from ignite.contrib.handlers import ProgressBar
@@ -46,52 +48,54 @@ class SsCnn(nn.Module):
         x = self.classifier(x)
         return x
 
-def update(engine, data):
-    input_left, input_right, label = data['left_image'], data['right_image'], data['winner']
-    input_left, input_right, label = input_left.to(device), input_right.to(device), label.to(device)
-    inverse_label = label.clone()
-    label[label==-1] = 0
-    # zero the parameter gradients
-    optimizer.zero_grad()
+def train(device, net, dataloader, val_loader, args):
+    device = device
+    net = net.to(device)
 
-    # forward + backward + optimize
-    outputs = net(input_left,input_right)
-
-    loss = criterion(outputs, label)
-
-    loss.backward()
-    optimizer.step()
-    out_loss = loss.item()
-    # reverse example
-    inverse_label*=-1 #swap label
-    inverse_label[inverse_label==-1] = 0
-    inverse_outputs = net(input_right,input_left) #pass swapped input
-    inverse_loss = criterion(inverse_outputs, inverse_label)
-    inverse_loss.backward()
-    optimizer.step()
-
-    return  { 'loss':loss.item(), 
-            'y':label,
-            'y_pred': outputs
-            }
-
-def inference(engine,data):
-    with torch.no_grad():
+    def update(engine, data):
         input_left, input_right, label = data['left_image'], data['right_image'], data['winner']
         input_left, input_right, label = input_left.to(device), input_right.to(device), label.to(device)
-        
+        inverse_label = label.clone()
         label[label==-1] = 0
-        
-        # forward
-        outputs = net(input_left,input_right)
-        loss = criterion(outputs, label)
-    return  { 'loss':loss.item(), 
-            'y':label,
-            'y_pred': outputs
-            }
+        # zero the parameter gradients
+        optimizer.zero_grad()
 
-def train(device, net, loader,args):
-    net = net.to(device)
+        # forward + backward + optimize
+        outputs = net(input_left,input_right)
+
+        loss = criterion(outputs, label)
+
+        loss.backward()
+        optimizer.step()
+        out_loss = loss.item()
+        # reverse example
+        inverse_label*=-1 #swap label
+        inverse_label[inverse_label==-1] = 0
+        inverse_outputs = net(input_right,input_left) #pass swapped input
+        inverse_loss = criterion(inverse_outputs, inverse_label)
+        inverse_loss.backward()
+        optimizer.step()
+
+        return  { 'loss':loss.item(), 
+                'y':label,
+                'y_pred': outputs
+                }
+
+    def inference(engine,data):
+        with torch.no_grad():
+            input_left, input_right, label = data['left_image'], data['right_image'], data['winner']
+            input_left, input_right, label = input_left.to(device), input_right.to(device), label.to(device)
+            
+            label[label==-1] = 0
+            
+            # forward
+            outputs = net(input_left,input_right)
+            loss = criterion(outputs, label)
+        return  { 'loss':loss.item(), 
+                'y':label,
+                'y_pred': outputs
+                }
+                
     criterion = nn.NLLLoss()
     optimizer = optim.SGD(net.parameters(), lr=args.lr, momentum=0.9, weight_decay=args.wd)
 

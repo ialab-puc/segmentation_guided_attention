@@ -2,6 +2,10 @@
 
 ## dependencies
 import argparse
+import torch
+from torchvision import transforms
+from torch.utils.data import random_split, DataLoader
+
 
 from data import PlacePulseDataset, ToTensor, Rescale
 
@@ -20,7 +24,7 @@ def arg_parse():
     parser.add_argument('--model_dir', help="directory to load and save models", default='models/', type=str)
     parser.add_argument('--model', help="model to use, sscnn or rsscnn", default='sscnn', type=str, choices=['rscnn','scnn'])
     parser.add_argument('--epoch', help="epoch to load training", default=1, type=int)
-    parser.add_argument('--cuda_id' help="gpu id", default=0, type=int)
+    parser.add_argument('--cuda_id', help="gpu id", default=0, type=int)
     #TODO: ADD pretrainedmodel option
     return parser
 
@@ -60,6 +64,6 @@ if __name__ == '__main__':
         net.load_state_dict(torch.load(os.path.join(args.model_dir,f'{args.model}_{args.attribute}_model_{args.epoch}.pth')))
         epoch = args.epoch
     
-    train(device,net,loader, args)
+    train(device,net,dataloader,val_loader, args)
 
 
