@@ -95,7 +95,7 @@ def train(device, net, dataloader, val_loader, args):
                 'y':label,
                 'y_pred': outputs
                 }
-                
+
     criterion = nn.NLLLoss()
     optimizer = optim.SGD(net.parameters(), lr=args.lr, momentum=0.9, weight_decay=args.wd)
 
@@ -131,7 +131,7 @@ def train(device, net, dataloader, val_loader, args):
         trainer.add_event_handler(Events.STARTED, start_epoch)
         evaluator.add_event_handler(Events.STARTED, start_epoch)
         
-    trainer.run(dataloader,max_epochs=10)
+    trainer.run(dataloader,max_epochs=args.max_epochs)
 
 def test():
     pass

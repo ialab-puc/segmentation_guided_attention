@@ -24,6 +24,7 @@ def arg_parse():
     parser.add_argument('--model_dir', help="directory to load and save models", default='models/', type=str)
     parser.add_argument('--model', help="model to use, sscnn or rsscnn", default='sscnn', type=str, choices=['rscnn','scnn'])
     parser.add_argument('--epoch', help="epoch to load training", default=1, type=int)
+    parser.add_argument('--max_epochs', help="maximum training epochs", default=10, type=int)
     parser.add_argument('--cuda_id', help="gpu id", default=0, type=int)
     #TODO: ADD pretrainedmodel option
     return parser
