@@ -123,7 +123,7 @@ def train(device, net, dataloader, val_loader, args):
         metrics = evaluator.state.metrics
         print("Training Results - Epoch: {}  Avg Val accuracy: {:.5f} Avg Val loss: {:.5f}".format(trainer.state.epoch, metrics['avg_acc'], metrics['loss']))
 
-    handler = ModelCheckpoint(f'{args.model_dir}', f'{args.model}_{args.premodel}_{args.attribute}', save_interval=1, n_saved=10, create_dir=True, save_as_state_dict=True, require_empty=False)
+    handler = ModelCheckpoint(args.model_dir, '{}_{}_{}'.format(args.model, args.premodel, args.attribute), save_interval=1, n_saved=10, create_dir=True, save_as_state_dict=True, require_empty=False)
     trainer.add_event_handler(Events.EPOCH_COMPLETED, handler, {
                 'model': net,
                 'optimizer': optimizer,

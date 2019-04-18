@@ -50,7 +50,7 @@ if __name__ == '__main__':
                             shuffle=True, num_workers=args.num_workers)
 
     if args.cuda:
-        device = torch.device(f"cuda:{args.cuda_id}" if torch.cuda.is_available() else "cpu")
+        device = torch.device("cuda:{}".format(args.cuda_id) if torch.cuda.is_available() else "cpu")
     else:
         device = torch.device("cpu")
 
@@ -74,7 +74,12 @@ if __name__ == '__main__':
 
     net = Net(models[args.premodel])
     if args.resume:
-        net.load_state_dict(torch.load(os.path.join(args.model_dir,f'{args.model}_{args.premodel}_{args.attribute}_model_{args.epoch}.pth')))
+        net.load_state_dict(torch.load(os.path.join(args.model_dir,'{}_{}_{}_model_{}.pth'.format(
+            args.model,
+            args.premodel,
+            args.attribute,
+            args.attribute
+        ))))
     
     train(device,net,dataloader,val_loader, args)
 
