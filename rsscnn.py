@@ -1,6 +1,6 @@
 import torchvision.models as models
 import torch.nn as nn
-
+import torch
 from ignite.engine import Engine, Events
 from ignite.metrics import Accuracy,Loss, RunningAverage
 from ignite.contrib.handlers import ProgressBar
@@ -8,15 +8,20 @@ from ignite.handlers import ModelCheckpoint
 
 class RSsCnn(nn.Module):
     
-    def __init__(self):
+    def __init__(self,model):
         super(RSsCnn, self).__init__()
-        self.cnn = models.vgg19(pretrained=True).features
-        self.fuse_conv_1 = nn.Conv2d(1024,1024,3)
-        self.fuse_conv_2 = nn.Conv2d(1024,1024,3)
-        self.fuse_conv_3 = nn.Conv2d(1024,1024,2)
-        self.fuse_fc = nn.Linear(1024*4, 2)
+        self.cnn = model(pretrained=True).features
+        x = torch.randn([3,224,224]).unsqueeze(0)
+        output_size = self.cnn(x).size()
+        self.dims = output_size[1]*2
+        self.cnn_size = output_size
+        self.conv_factor= output_size[2] % 5 #should be 1 or 2
+        self.fuse_conv_1 = nn.Conv2d(self.dims,self.dims,3)
+        self.fuse_conv_2 = nn.Conv2d(self.dims,self.dims,3)
+        self.fuse_conv_3 = nn.Conv2d(self.dims,self.dims,2)
+        self.fuse_fc = nn.Linear(self.dims*(self.conv_factor**2), 2)
         self.classifier = nn.LogSoftmax(dim=1)
-        self.rank_fc_1 = nn.Linear(512*7*7, 4096)
+        self.rank_fc_1 = nn.Linear(self.cnn_size[1]*self.cnn_size[2]*self.cnn_size[3], 4096)
         self.rank_fc_2 = nn.Linear(4096, 1)
     
     def forward(self,left_image, right_image):
@@ -26,15 +31,14 @@ class RSsCnn(nn.Module):
         x = torch.cat((left,right),1)
         x = self.fuse_conv_1(x)
         x = self.fuse_conv_2(x)
-        print(x.size())
         x = self.fuse_conv_3(x)
-        print(x.size())
-        x = x.view(batch_size,1024*4)
+        x = x.view(batch_size,self.dims*(self.conv_factor**2))
         x_clf = self.fuse_fc(x)
         x_clf = self.classifier(x_clf)
-        
-        x_rank_left = left.view(batch_size,512*7*7)
-        x_rank_right = right.view(batch_size,512*7*7)
+        print(left.size())
+        print(self.cnn_size)
+        x_rank_left = left.view(batch_size,self.cnn_size[1]*self.cnn_size[2]*self.cnn_size[3])
+        x_rank_right = right.view(batch_size,self.cnn_size[1]*self.cnn_size[2]*self.cnn_size[3])
         x_rank_left = self.rank_fc_1(x_rank_left)
         x_rank_right = self.rank_fc_1(x_rank_right)
         x_rank_left = self.rank_fc_2(x_rank_left)
@@ -110,6 +114,9 @@ def train(device, net, dataloader, val_loader, args):
     pbar = ProgressBar(persist=False)
     pbar.attach(trainer,['loss','avg_acc'])
 
+    pbar = ProgressBar(persist=False)
+    pbar.attach(evaluator,['loss','avg_acc'])
+
     @trainer.on(Events.EPOCH_COMPLETED)
     def log_validation_results(trainer):
         evaluator.run(val_loader)
@@ -117,7 +124,7 @@ def train(device, net, dataloader, val_loader, args):
         print("Training Results - Epoch: {}  Avg Val accuracy: {:.2f} Avg Val loss: {:.2f}".format(trainer.state.epoch, metrics['avg_acc'], metrics['loss']))
     
 
-    handler = ModelCheckpoint(f'{args.model_dir}', f'{args.model}_{args.attribute}', save_interval=1, n_saved=10, create_dir=True, save_as_state_dict=True, require_empty=False)
+    handler = ModelCheckpoint(f'{args.model_dir}', f'{args.model}_{args.premodel}_{args.attribute}', save_interval=1, n_saved=10, create_dir=True, save_as_state_dict=True, require_empty=False)
     trainer.add_event_handler(Events.EPOCH_COMPLETED, handler, {
                 'model': net,
                 'optimizer': optimizer,
@@ -131,5 +138,36 @@ def train(device, net, dataloader, val_loader, args):
 
     trainer.run(dataloader,max_epochs=args.max_epochs)
 
-def test():
-    pass
+def test(net,device, dataloader, args):
+    def inference(engine,data):
+        with torch.no_grad():
+            input_left, input_right, label = data['left_image'], data['right_image'], data['winner']
+            input_left, input_right, label = input_left.to(device), input_right.to(device), label.to(device)
+            rank_label = label.clone()
+            label[label==-1] = 0
+            rank_label = rank_label.float()
+            # forward
+            output_clf,output_rank_left, output_rank_right = net(input_left,input_right)
+
+            return  { 
+                'y':label,
+                'y_pred': output_clf
+                }
+    net = net.to(device)
+    tester = Engine(update)
+
+    RunningAverage(Accuracy(output_transform=lambda x: (x['y_pred'],x['y']))).attach(tester,'avg_acc')
+    pbar = ProgressBar(persist=False)
+    pbar.attach(tester,['loss','avg_acc'])
+
+    @trainer.on(Events.EPOCH_COMPLETED)
+    def log_validation_results(tester):
+        metrics = tester.state.metrics
+        print("Test Results: Test accuracy: {:.2f} ".format(tester.state.epoch, metrics['avg_acc']))
+    tester.run(dataloader,max_epochs=1)
+
+if __name__ == '__main__':
+    net = RSsCnn(models.densenet121)
+    x = torch.randn([3,224,224]).unsqueeze(0)
+    fwd =  net(x,x)[0]
+    print(fwd.size())

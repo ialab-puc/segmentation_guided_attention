@@ -6,7 +6,7 @@ import os
 import torch
 from torchvision import transforms
 from torch.utils.data import random_split, DataLoader
-
+import torchvision.models as models
 
 from data import PlacePulseDataset, ToTensor, Rescale
 
@@ -16,7 +16,7 @@ def arg_parse():
     parser.add_argument('--cuda', help="1 to run with cuda else 0", default=1, type=bool)
     parser.add_argument('--csv', help="dataset csv path", default="votes_clean.csv", type=str)
     parser.add_argument('--dataset', help="dataset images directory path", default="placepulse/", type=str)
-    parser.add_argument('--attribute', help="placepulse attribute to train on", default="wealthy", type=str)
+    parser.add_argument('--attribute', help="placepulse attribute to train on", default="wealthy", type=str,  choices=['wealthy','lively', 'depressing', 'safety','boring','beautiful'])
     parser.add_argument('--batch_size', help="batch size", default=32, type=int)
     parser.add_argument('--lr', help="learning_rate", default=0.001, type=float)
     parser.add_argument('--resume','--r', help="resume training",action='store_true')
@@ -27,7 +27,7 @@ def arg_parse():
     parser.add_argument('--epoch', help="epoch to load training", default=1, type=int)
     parser.add_argument('--max_epochs', help="maximum training epochs", default=10, type=int)
     parser.add_argument('--cuda_id', help="gpu id", default=0, type=int)
-    #TODO: ADD pretrainedmodel option
+    parser.add_argument('--premodel', help="premodel to use, alex or vgg or dense", default='alex', type=str, choices=['alex','vgg','dense'])
     return parser
 
         
@@ -60,10 +60,21 @@ if __name__ == '__main__':
     else:
         from rsscnn import RSsCnn as Net
         from rsscnn import train
-    
-    net = Net()
+
+    resnet18 = models.resnet101
+    alexnet = models.alexnet
+    vgg16 = models.vgg19
+    dense = models.densenet161
+
+    models = {
+        'alex':models.alexnet,
+        'vgg':models.vgg19,
+        'dense':models.densenet161
+    }
+
+    net = Net(models[args.premodel])
     if args.resume:
-        net.load_state_dict(torch.load(os.path.join(args.model_dir,f'{args.model}_{args.attribute}_model_{args.epoch}.pth')))
+        net.load_state_dict(torch.load(os.path.join(args.model_dir,f'{args.model}_{args.premodel}_{args.attribute}_model_{args.epoch}.pth')))
     
     train(device,net,dataloader,val_loader, args)
 
