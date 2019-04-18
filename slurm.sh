@@ -12,7 +12,6 @@
 #SBATCH --partition=ialab-high        # Se tiene que elegir una partición de nodos con GPU
 #SBATCH --gres=gpu:1                 # Usar 2 GPUs (se pueden usar N GPUs de marca especifica de la manera --gres=gpu:marca:N)
 date;hostname;pwd
-
-python main.py
+pyenv/bin/python3 train.py
 
 date
