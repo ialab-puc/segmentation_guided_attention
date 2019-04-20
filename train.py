@@ -78,7 +78,7 @@ if __name__ == '__main__':
             args.model,
             args.premodel,
             args.attribute,
-            args.attribute
+            args.epoch
         ))))
     
     train(device,net,dataloader,val_loader, args)

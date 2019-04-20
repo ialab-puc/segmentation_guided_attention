@@ -68,7 +68,7 @@ if __name__ == '__main__':
             args.model,
             args.premodel,
             args.attribute,
-            args.attribute
+            args.epoch
         ))))
     
     test(device,net,dataloader, args)
