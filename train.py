@@ -37,8 +37,8 @@ if __name__ == '__main__':
     print(args)
     data=PlacePulseDataset(args.csv,args.dataset,transforms.Compose([Rescale((224,224)),ToTensor()]), args.attribute)
     len_data = len(data)
-    train_len = int(len_data*0.65)
-    val_len = int(len_data*0.05)
+    train_len = int(len_data*0.7)
+    val_len = int(len_data*0.3)
     test_len = len_data-train_len-val_len
     train,val,test = random_split(data,[train_len , val_len, test_len])
     print(len(train))
