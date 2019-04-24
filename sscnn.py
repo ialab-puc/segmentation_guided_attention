@@ -126,7 +126,7 @@ def train(device, net, dataloader, val_loader, args):
         print("Training Results - Epoch: {}  Avg Val accuracy: {:.5f} Avg Val loss: {:.5f}".format(trainer.state.epoch, metrics['avg_acc'], metrics['loss']))
 
     handler = ModelCheckpoint(args.model_dir, '{}_{}_{}'.format(args.model, args.premodel, args.attribute),
-                                n_saved=10,
+                                n_saved=1,
                                 create_dir=True,
                                 save_as_state_dict=True,
                                 require_empty=False,
