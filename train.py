@@ -64,12 +64,12 @@ if __name__ == '__main__':
     resnet18 = models.resnet101
     alexnet = models.alexnet
     vgg16 = models.vgg19
-    dense = models.densenet161
+    dense = models.densenet121
 
     models = {
         'alex':models.alexnet,
         'vgg':models.vgg19,
-        'dense':models.densenet161
+        'dense':models.densenet121
     }
 
     net = Net(models[args.premodel])
