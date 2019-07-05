@@ -1,5 +1,6 @@
 import torchvision.models as models
 import torch.nn as nn
+import torch.optim as optim
 import torch
 from ignite.engine import Engine, Events
 from ignite.metrics import Accuracy,Loss, RunningAverage
@@ -111,11 +112,11 @@ def train(device, net, dataloader, val_loader, args):
     RunningAverage(Accuracy(output_transform=lambda x: (x['y_pred'],x['y']))).attach(evaluator,'avg_acc')
 
 
-    pbar = ProgressBar(persist=False)
-    pbar.attach(trainer,['loss','avg_acc'])
+    # pbar = ProgressBar(persist=False)
+    # pbar.attach(trainer,['loss','avg_acc'])
 
-    pbar = ProgressBar(persist=False)
-    pbar.attach(evaluator,['loss','avg_acc'])
+    # pbar = ProgressBar(persist=False)
+    # pbar.attach(evaluator,['loss','avg_acc'])
 
     @trainer.on(Events.EPOCH_COMPLETED)
     def log_validation_results(trainer):
