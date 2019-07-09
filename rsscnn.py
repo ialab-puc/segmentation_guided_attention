@@ -120,10 +120,17 @@ def train(device, net, dataloader, val_loader, args):
     def log_validation_results(trainer):
         evaluator.run(val_loader)
         metrics = evaluator.state.metrics
-        print("Training Results - Epoch: {}  Avg Val accuracy: {:.2f} Avg Val loss: {:.2f}".format(trainer.state.epoch, metrics['avg_acc'], metrics['loss']))
+        trainer.state.metrics['val_acc'] = metrics['avg_acc']
+        print("Training Results - Epoch: {}  Avg Train accuracy: {:.5f} Avg Train loss: {:.5f}".format(trainer.state.epoch, trainer.state.metrics['avg_acc'], trainer.state.metrics['loss']))
+        print("Training Results - Epoch: {}  Avg Val accuracy: {:.5f} Avg Val loss: {:.5f}".format(trainer.state.epoch, metrics['avg_acc'], metrics['loss']))
     
 
-    handler = ModelCheckpoint(args.model_dir, '{}_{}_{}'.format(args.model, args.premodel, args.attribute), save_interval=1, n_saved=10, create_dir=True, save_as_state_dict=True, require_empty=False)
+    handler = ModelCheckpoint(args.model_dir, '{}_{}_{}'.format(args.model, args.premodel, args.attribute),
+                                n_saved=1,
+                                create_dir=True,
+                                save_as_state_dict=True,
+                                require_empty=False,
+                                score_function=lambda engine: engine.state.metrics['val_acc'])
     trainer.add_event_handler(Events.EPOCH_COMPLETED, handler, {
                 'model': net,
                 'optimizer': optimizer,
