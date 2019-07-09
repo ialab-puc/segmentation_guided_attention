@@ -132,8 +132,7 @@ def train(device, net, dataloader, val_loader, args):
                                 require_empty=False,
                                 score_function=lambda engine: engine.state.metrics['val_acc'])
     trainer.add_event_handler(Events.EPOCH_COMPLETED, handler, {
-                'model': net,
-                'optimizer': optimizer,
+                'model': net
                 })
 
     if (args.resume):
