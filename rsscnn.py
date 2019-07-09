@@ -36,8 +36,6 @@ class RSsCnn(nn.Module):
         x = x.view(batch_size,self.dims*(self.conv_factor**2))
         x_clf = self.fuse_fc(x)
         x_clf = self.classifier(x_clf)
-        print(left.size())
-        print(self.cnn_size)
         x_rank_left = left.view(batch_size,self.cnn_size[1]*self.cnn_size[2]*self.cnn_size[3])
         x_rank_right = right.view(batch_size,self.cnn_size[1]*self.cnn_size[2]*self.cnn_size[3])
         x_rank_left = self.rank_fc_1(x_rank_left)
@@ -168,7 +166,9 @@ def test(net,device, dataloader, args):
     tester.run(dataloader,max_epochs=1)
 
 if __name__ == '__main__':
-    net = RSsCnn(models.densenet121)
+    from torchviz import make_dot
+    net = RSsCnn(models.alexnet)
     x = torch.randn([3,224,224]).unsqueeze(0)
-    fwd =  net(x,x)[0]
-    print(fwd.size())
+    y = torch.randn([3,224,224]).unsqueeze(0)
+    fwd =  net(x,y)
+    print(make_dot(fwd, params=dict(net.named_parameters())))
