@@ -61,7 +61,7 @@ def train(device, net, dataloader, val_loader, args):
         loss_clf = clf_crit(output_clf,label)
     #   print(output_rank_left, output_rank_right, rank_label)
         loss_rank = rank_crit(output_rank_left, output_rank_right, rank_label)
-        loss = loss_clf #+ loss_rank*lamb
+        loss = loss_clf + loss_rank*lamb
         loss.to(device)
         loss.backward()
         optimizer.step()
@@ -98,32 +98,40 @@ def train(device, net, dataloader, val_loader, args):
     optimizer = optim.SGD(net.parameters(), lr=args.lr, momentum=0.9, weight_decay=args.wd)
     lamb = 0.5
 
-
-
     trainer = Engine(update)
     evaluator = Engine(inference)
 
     RunningAverage(output_transform=lambda x: x['loss']).attach(trainer, 'loss')
+    RunningAverage(output_transform=lambda x: x['loss_clf']).attach(trainer, 'loss_clf')
+    RunningAverage(output_transform=lambda x: x['loss_rank']).attach(trainer, 'loss_rank')
     RunningAverage(Accuracy(output_transform=lambda x: (x['y_pred'],x['y']))).attach(trainer,'avg_acc')
 
     RunningAverage(output_transform=lambda x: x['loss']).attach(evaluator, 'loss')
+    RunningAverage(output_transform=lambda x: x['loss_clf']).attach(evaluator, 'loss_clf')
+    RunningAverage(output_transform=lambda x: x['loss_rank']).attach(evaluator, 'loss_rank')
     RunningAverage(Accuracy(output_transform=lambda x: (x['y_pred'],x['y']))).attach(evaluator,'avg_acc')
 
 
-    # pbar = ProgressBar(persist=False)
-    # pbar.attach(trainer,['loss','avg_acc'])
-
-    # pbar = ProgressBar(persist=False)
-    # pbar.attach(evaluator,['loss','avg_acc'])
 
     @trainer.on(Events.EPOCH_COMPLETED)
     def log_validation_results(trainer):
-        evaluator.run(val_loader)
+        evaluator.run(val_loader), 
         metrics = evaluator.state.metrics
         trainer.state.metrics['val_acc'] = metrics['avg_acc']
-        print("Training Results - Epoch: {}  Avg Train accuracy: {:.5f} Avg Train loss: {:.5f}".format(trainer.state.epoch, trainer.state.metrics['avg_acc'], trainer.state.metrics['loss']))
-        print("Training Results - Epoch: {}  Avg Val accuracy: {:.5f} Avg Val loss: {:.5f}".format(trainer.state.epoch, metrics['avg_acc'], metrics['loss']))
-    
+        print("Training Results - Epoch: {}  Avg Train accuracy: {:.5f} Avg Train loss: {:.5f} Avg Train clf loss: {:.5f} Avg Train rank loss: {:.5f}".format(
+                trainer.state.epoch,
+                trainer.state.metrics['avg_acc'],
+                trainer.state.metrics['loss'],
+                trainer.state.metrics['loss_clf'],
+                trainer.state.metrics['loss_rank'])
+            )
+        print("Training Results - Epoch: {}  Avg Val accuracy: {:.5f} Avg Val loss: {:.5f} Avg Val clf loss: {:.5f} Avg Val rank loss: {:.5f}".format(
+                trainer.state.epoch,
+                metrics['avg_acc'],
+                metrics['loss'],
+                metrics['loss_clf'],
+                metrics['loss_rank'])
+            )
 
     handler = ModelCheckpoint(args.model_dir, '{}_{}_{}'.format(args.model, args.premodel, args.attribute),
                                 n_saved=1,
