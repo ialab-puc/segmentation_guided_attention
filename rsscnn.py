@@ -61,7 +61,7 @@ def train(device, net, dataloader, val_loader, args):
         loss_clf = clf_crit(output_clf,label)
     #   print(output_rank_left, output_rank_right, rank_label)
         loss_rank = rank_crit(output_rank_left, output_rank_right, rank_label)
-        loss = loss_clf + loss_rank*lamb
+        loss = loss_clf #+ loss_rank*lamb
         loss.to(device)
         loss.backward()
         optimizer.step()

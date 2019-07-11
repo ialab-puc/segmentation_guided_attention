@@ -11,3 +11,6 @@ pyenv
 models
 placepulse.tar.xz
 placepulse
+*.dot
+*.ps
+*.tar.xz
