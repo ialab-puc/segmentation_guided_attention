@@ -35,7 +35,7 @@ class RSsCnn(nn.Module):
         x = self.fuse_conv_3(x)
         x = x.view(batch_size,self.dims*(self.conv_factor**2))
         x_clf = self.fuse_fc(x)
-        x_clf = self.classifier(x_clf)
+        #x_clf = self.classifier(x_clf)
         x_rank_left = left.view(batch_size,self.cnn_size[1]*self.cnn_size[2]*self.cnn_size[3])
         x_rank_right = right.view(batch_size,self.cnn_size[1]*self.cnn_size[2]*self.cnn_size[3])
         x_rank_left = self.rank_fc_1(x_rank_left)
@@ -64,6 +64,7 @@ def train(device, net, dataloader, val_loader, args):
         loss = loss_clf + loss_rank*lamb
         loss.to(device)
         loss.backward()
+        #nn.utils.clip_grad_norm_(net.parameters(), args.clip)
         optimizer.step()
         return  { 'loss':loss.item(), 
                 'loss_clf':loss_clf.item(), 
@@ -93,7 +94,7 @@ def train(device, net, dataloader, val_loader, args):
                 }
     net = net.to(device)
 
-    clf_crit = nn.NLLLoss()
+    clf_crit = nn.CrossEntropyLoss()
     rank_crit = nn.MarginRankingLoss(reduction='sum')
     optimizer = optim.SGD(net.parameters(), lr=args.lr, momentum=0.9, weight_decay=args.wd)
     lamb = 0.5
