@@ -35,7 +35,7 @@ class RSsCnn(nn.Module):
         x = self.fuse_conv_3(x)
         x = x.view(batch_size,self.dims*(self.conv_factor**2))
         x_clf = self.fuse_fc(x)
-        #x_clf = self.classifier(x_clf)
+        x_clf = self.classifier(x_clf)
         x_rank_left = left.view(batch_size,self.cnn_size[1]*self.cnn_size[2]*self.cnn_size[3])
         x_rank_right = right.view(batch_size,self.cnn_size[1]*self.cnn_size[2]*self.cnn_size[3])
         x_rank_left = self.rank_fc_1(x_rank_left)
@@ -94,10 +94,10 @@ def train(device, net, dataloader, val_loader, args):
                 }
     net = net.to(device)
 
-    clf_crit = nn.CrossEntropyLoss()
+    clf_crit = nn.NLLLoss()
     rank_crit = nn.MarginRankingLoss(reduction='sum')
     optimizer = optim.SGD(net.parameters(), lr=args.lr, momentum=0.9, weight_decay=args.wd)
-    lamb = 0.5
+    lamb = 1000
 
     trainer = Engine(update)
     evaluator = Engine(inference)
@@ -123,14 +123,14 @@ def train(device, net, dataloader, val_loader, args):
         evaluator.run(val_loader), 
         metrics = evaluator.state.metrics
         trainer.state.metrics['val_acc'] = metrics['avg_acc']
-        print("Training Results - Epoch: {}  Avg Train accuracy: {:.5f} Avg Train loss: {:.5f} Avg Train clf loss: {:.5f} Avg Train rank loss: {:.5f}".format(
+        print("Training Results - Epoch: {}  Avg Train accuracy: {:.5f} Avg Train loss: {:.6e} Avg Train clf loss: {:.6e} Avg Train rank loss: {:.6e}".format(
                 trainer.state.epoch,
                 trainer.state.metrics['avg_acc'],
                 trainer.state.metrics['loss'],
                 trainer.state.metrics['loss_clf'],
                 trainer.state.metrics['loss_rank'])
             )
-        print("Training Results - Epoch: {}  Avg Val accuracy: {:.5f} Avg Val loss: {:.5f} Avg Val clf loss: {:.5f} Avg Val rank loss: {:.5f}".format(
+        print("Training Results - Epoch: {}  Avg Val accuracy: {:.5f} Avg Val loss: {:.6e} Avg Val clf loss: {:.6e} Avg Val rank loss: {:.6e}".format(
                 trainer.state.epoch,
                 metrics['avg_acc'],
                 metrics['loss'],
