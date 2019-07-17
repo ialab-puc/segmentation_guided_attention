@@ -2,6 +2,7 @@ import torchvision.models as models
 import torch.nn as nn
 import torch.optim as optim
 import torch
+from torch.autograd import Variable
 from ignite.engine import Engine, Events
 from ignite.metrics import Accuracy,Loss, RunningAverage
 from ignite.contrib.handlers import ProgressBar
@@ -59,9 +60,12 @@ def train(device, net, dataloader, val_loader, args):
         output_clf,output_rank_left, output_rank_right = net(input_left,input_right)
 
         loss_clf = clf_crit(output_clf,label)
-    #   print(output_rank_left, output_rank_right, rank_label)
+        output_rank_left = output_rank_left.view(args.batch_size)
+        output_rank_right = output_rank_right.view(args.batch_size)
         loss_rank = rank_crit(output_rank_left, output_rank_right, rank_label)
-        loss = loss_clf + loss_rank*lamb
+        # import pdb
+        # pdb.set_trace()
+        loss = loss_clf*lamb + loss_rank
         loss.to(device)
         loss.backward()
         if args.clip != 0:
@@ -98,7 +102,7 @@ def train(device, net, dataloader, val_loader, args):
     clf_crit = nn.NLLLoss()
     rank_crit = nn.MarginRankingLoss(reduction='sum')
     optimizer = optim.SGD(net.parameters(), lr=args.lr, momentum=0.9, weight_decay=args.wd)
-    lamb = 1000
+    lamb = Variable(torch.FloatTensor([1]),requires_grad = False).cuda()[0]
 
     trainer = Engine(update)
     evaluator = Engine(inference)
@@ -113,11 +117,11 @@ def train(device, net, dataloader, val_loader, args):
     RunningAverage(output_transform=lambda x: x['loss_rank']).attach(evaluator, 'loss_rank')
     RunningAverage(Accuracy(output_transform=lambda x: (x['y_pred'],x['y']))).attach(evaluator,'avg_acc')
 
-    # pbar = ProgressBar(persist=False)
-    # pbar.attach(trainer,['loss','loss_clf', 'loss_rank','avg_acc'])
+    pbar = ProgressBar(persist=False)
+    pbar.attach(trainer,['loss','loss_clf', 'loss_rank','avg_acc'])
 
-    # pbar = ProgressBar(persist=False)
-    # pbar.attach(evaluator,['loss','loss_clf', 'loss_rank','avg_acc'])
+    pbar = ProgressBar(persist=False)
+    pbar.attach(evaluator,['loss','loss_clf', 'loss_rank','avg_acc'])
 
     @trainer.on(Events.EPOCH_COMPLETED)
     def log_validation_results(trainer):
