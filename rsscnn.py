@@ -60,8 +60,8 @@ def train(device, net, dataloader, val_loader, args):
         output_clf,output_rank_left, output_rank_right = net(input_left,input_right)
 
         loss_clf = clf_crit(output_clf,label)
-        output_rank_left = output_rank_left.view(args.batch_size)
-        output_rank_right = output_rank_right.view(args.batch_size)
+        output_rank_left = output_rank_left.view(output_rank_left.size()[0])
+        output_rank_right = output_rank_right.view(output_rank_right.size()[0])
         loss_rank = rank_crit(output_rank_left, output_rank_right, rank_label)
         # import pdb
         # pdb.set_trace()
