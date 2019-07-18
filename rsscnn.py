@@ -68,8 +68,6 @@ def train(device, net, dataloader, val_loader, args):
         loss = loss_clf*lamb + loss_rank
         loss.to(device)
         loss.backward()
-        if args.clip != 0:
-            nn.utils.clip_grad_value_(net.parameters(), args.clip)
         optimizer.step()
         return  { 'loss':loss.item(), 
                 'loss_clf':loss_clf.item(), 

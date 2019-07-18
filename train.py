@@ -19,7 +19,6 @@ def arg_parse():
     parser.add_argument('--attribute', help="placepulse attribute to train on", default="wealthy", type=str,  choices=['wealthy','lively', 'depressing', 'safety','boring','beautiful'])
     parser.add_argument('--batch_size', help="batch size", default=32, type=int)
     parser.add_argument('--lr', help="learning_rate", default=0.001, type=float)
-    parser.add_argument('--clip', help="gradient clipping threshold", default=0, type=float)
     parser.add_argument('--resume','--r', help="resume training",action='store_true')
     parser.add_argument('--wd', help="weight decay regularization", default=0.0, type=float)
     parser.add_argument('--num_workers', help="number of workers for data loader", default=4, type=int)
