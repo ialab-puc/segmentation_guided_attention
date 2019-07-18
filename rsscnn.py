@@ -63,10 +63,7 @@ def train(device, net, dataloader, val_loader, args):
         output_rank_left = output_rank_left.view(output_rank_left.size()[0])
         output_rank_right = output_rank_right.view(output_rank_right.size()[0])
         loss_rank = rank_crit(output_rank_left, output_rank_right, rank_label)
-        # import pdb
-        # pdb.set_trace()
-        loss = loss_clf*lamb + loss_rank
-        loss.to(device)
+        loss = loss_clf + loss_rank
         loss.backward()
         optimizer.step()
         return  { 'loss':loss.item(), 
@@ -86,9 +83,10 @@ def train(device, net, dataloader, val_loader, args):
             # forward
             output_clf,output_rank_left, output_rank_right = net(input_left,input_right)
             loss_clf = clf_crit(output_clf,label)
+            output_rank_left = output_rank_left.view(output_rank_left.size()[0])
+            output_rank_right = output_rank_right.view(output_rank_right.size()[0])
             loss_rank = rank_crit(output_rank_left, output_rank_right, rank_label)
-            loss = loss_clf + loss_rank*lamb
-            loss.to(device)
+            loss = loss_clf + loss_rank
             return  { 'loss':loss.item(), 
                 'loss_clf':loss_clf.item(), 
                 'loss_rank':loss_rank.item(),
@@ -98,7 +96,7 @@ def train(device, net, dataloader, val_loader, args):
     net = net.to(device)
 
     clf_crit = nn.NLLLoss()
-    rank_crit = nn.MarginRankingLoss(reduction='sum')
+    rank_crit = nn.MarginRankingLoss(reduction='mean', margin=1)
     optimizer = optim.SGD(net.parameters(), lr=args.lr, momentum=0.9, weight_decay=args.wd)
     lamb = Variable(torch.FloatTensor([1]),requires_grad = False).cuda()[0]
 
@@ -115,11 +113,11 @@ def train(device, net, dataloader, val_loader, args):
     RunningAverage(output_transform=lambda x: x['loss_rank']).attach(evaluator, 'loss_rank')
     RunningAverage(Accuracy(output_transform=lambda x: (x['y_pred'],x['y']))).attach(evaluator,'avg_acc')
 
-    # pbar = ProgressBar(persist=False)
-    # pbar.attach(trainer,['loss','loss_clf', 'loss_rank','avg_acc'])
+    pbar = ProgressBar(persist=False)
+    pbar.attach(trainer,['loss','loss_clf', 'loss_rank','avg_acc'])
 
-    # pbar = ProgressBar(persist=False)
-    # pbar.attach(evaluator,['loss','loss_clf', 'loss_rank','avg_acc'])
+    pbar = ProgressBar(persist=False)
+    pbar.attach(evaluator,['loss','loss_clf', 'loss_rank','avg_acc'])
 
     @trainer.on(Events.EPOCH_COMPLETED)
     def log_validation_results(trainer):
