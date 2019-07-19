@@ -25,6 +25,8 @@ class RSsCnn(nn.Module):
         self.classifier = nn.LogSoftmax(dim=1)
         self.rank_fc_1 = nn.Linear(self.cnn_size[1]*self.cnn_size[2]*self.cnn_size[3], 4096)
         self.rank_fc_2 = nn.Linear(4096, 1)
+        self.conv_drop  = nn.Dropout(0.1)
+        self.drop  = nn.Dropout(0.5)
     
     def forward(self,left_image, right_image):
         batch_size = left_image.size()[0]
@@ -32,15 +34,20 @@ class RSsCnn(nn.Module):
         right = self.cnn(right_image)
         x = torch.cat((left,right),1)
         x = self.fuse_conv_1(x)
+        x = self.conv_drop(x)
         x = self.fuse_conv_2(x)
+        x = self.conv_drop(x)
         x = self.fuse_conv_3(x)
+        x = self.conv_drop(x)
         x = x.view(batch_size,self.dims*(self.conv_factor**2))
         x_clf = self.fuse_fc(x)
         x_clf = self.classifier(x_clf)
         x_rank_left = left.view(batch_size,self.cnn_size[1]*self.cnn_size[2]*self.cnn_size[3])
         x_rank_right = right.view(batch_size,self.cnn_size[1]*self.cnn_size[2]*self.cnn_size[3])
         x_rank_left = self.rank_fc_1(x_rank_left)
+        x_rank_left = self.drop(x_rank_left)
         x_rank_right = self.rank_fc_1(x_rank_right)
+        x_rank_right = self.drop(x_rank_right)
         x_rank_left = self.rank_fc_2(x_rank_left)
         x_rank_right = self.rank_fc_2(x_rank_right)
         return x_clf,x_rank_left, x_rank_right
