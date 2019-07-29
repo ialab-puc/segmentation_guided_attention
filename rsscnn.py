@@ -26,6 +26,7 @@ class RSsCnn(nn.Module):
         self.rank_fc_1 = nn.Linear(self.cnn_size[1]*self.cnn_size[2]*self.cnn_size[3], 4096)
         self.rank_fc_2 = nn.Linear(4096, 1)
         self.conv_drop  = nn.Dropout(0.1)
+        self.relu = nn.ReLU()
         self.drop  = nn.Dropout(0.5)
     
     def forward(self,left_image, right_image):
@@ -45,8 +46,10 @@ class RSsCnn(nn.Module):
         x_rank_left = left.view(batch_size,self.cnn_size[1]*self.cnn_size[2]*self.cnn_size[3])
         x_rank_right = right.view(batch_size,self.cnn_size[1]*self.cnn_size[2]*self.cnn_size[3])
         x_rank_left = self.rank_fc_1(x_rank_left)
+        x_rank_left = self.relu(x_rank_left)
         x_rank_left = self.drop(x_rank_left)
         x_rank_right = self.rank_fc_1(x_rank_right)
+        x_rank_right = self.relu(x_rank_right)
         x_rank_right = self.drop(x_rank_right)
         x_rank_left = self.rank_fc_2(x_rank_left)
         x_rank_right = self.rank_fc_2(x_rank_right)
@@ -128,6 +131,7 @@ def train(device, net, dataloader, val_loader, args):
 
     @trainer.on(Events.EPOCH_COMPLETED)
     def log_validation_results(trainer):
+        net.eval()
         evaluator.run(val_loader), 
         metrics = evaluator.state.metrics
         trainer.state.metrics['val_acc'] = metrics['avg_acc']
@@ -145,6 +149,7 @@ def train(device, net, dataloader, val_loader, args):
                 metrics['loss_clf'],
                 metrics['loss_rank'])
             )
+        net.train()
 
     handler = ModelCheckpoint(args.model_dir, '{}_{}_{}'.format(args.model, args.premodel, args.attribute),
                                 n_saved=1,
