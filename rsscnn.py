@@ -7,6 +7,7 @@ from ignite.engine import Engine, Events
 from ignite.metrics import Accuracy,Loss, RunningAverage
 from ignite.contrib.handlers import ProgressBar
 from ignite.handlers import ModelCheckpoint
+from tensorboardX import SummaryWriter
 
 class RSsCnn(nn.Module):
     
@@ -113,6 +114,7 @@ def train(device, net, dataloader, val_loader, args):
     trainer = Engine(update)
     evaluator = Engine(inference)
 
+    writer = SummaryWriter()
     RunningAverage(output_transform=lambda x: x['loss']).attach(trainer, 'loss')
     RunningAverage(output_transform=lambda x: x['loss_clf']).attach(trainer, 'loss_clf')
     RunningAverage(output_transform=lambda x: x['loss_rank']).attach(trainer, 'loss_rank')
@@ -132,9 +134,22 @@ def train(device, net, dataloader, val_loader, args):
     @trainer.on(Events.EPOCH_COMPLETED)
     def log_validation_results(trainer):
         net.eval()
-        evaluator.run(val_loader), 
+        writer.add_scalars('Training', {
+            'accuracy/accuracy':trainer.state.metrics['avg_acc'],
+            'loss/total':trainer.state.metrics['loss'],
+            'loss/clf':trainer.state.metrics['loss_clf'],
+            'loss/rank':trainer.state.metrics['loss_rank']
+        }, trainer.state.epoch)
+        evaluator.run(val_loader)
         metrics = evaluator.state.metrics
+        writer.add_scalars('Val', {
+            'accuracy/accuracy':metrics['avg_acc'],
+            'loss/total':metrics['loss'],
+            'loss/clf':metrics['loss_clf'],
+            'loss/rank':metrics['loss_rank']
+        }, trainer.state.epoch)
         trainer.state.metrics['val_acc'] = metrics['avg_acc']
+        
         print("Training Results - Epoch: {}  Avg Train accuracy: {:.5f} Avg Train loss: {:.6e} Avg Train clf loss: {:.6e} Avg Train rank loss: {:.6e}".format(
                 trainer.state.epoch,
                 trainer.state.metrics['avg_acc'],
@@ -168,35 +183,7 @@ def train(device, net, dataloader, val_loader, args):
         evaluator.add_event_handler(Events.STARTED, start_epoch)
 
     trainer.run(dataloader,max_epochs=args.max_epochs)
-
-def test(net,device, dataloader, args):
-    def inference(engine,data):
-        with torch.no_grad():
-            input_left, input_right, label = data['left_image'], data['right_image'], data['winner']
-            input_left, input_right, label = input_left.to(device), input_right.to(device), label.to(device)
-            rank_label = label.clone()
-            label[label==-1] = 0
-            rank_label = rank_label.float()
-            # forward
-            output_clf,output_rank_left, output_rank_right = net(input_left,input_right)
-
-            return  { 
-                'y':label,
-                'y_pred': output_clf
-                }
-    net = net.to(device)
-    tester = Engine(update)
-
-    RunningAverage(Accuracy(output_transform=lambda x: (x['y_pred'],x['y']))).attach(tester,'avg_acc')
-    pbar = ProgressBar(persist=False)
-    pbar.attach(tester,['loss','avg_acc'])
-
-    @trainer.on(Events.EPOCH_COMPLETED)
-    def log_validation_results(tester):
-        metrics = tester.state.metrics
-        print("Test Results: Test accuracy: {:.2f} ".format(tester.state.epoch, metrics['avg_acc']))
-    tester.run(dataloader,max_epochs=1)
-
+    
 if __name__ == '__main__':
     from torchviz import make_dot
     net = RSsCnn(models.alexnet)

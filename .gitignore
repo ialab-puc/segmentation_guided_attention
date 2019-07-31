@@ -14,3 +14,5 @@ placepulse
 *.dot
 *.ps
 *.tar.xz
+runs/*
+tensorboardX
