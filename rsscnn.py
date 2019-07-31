@@ -134,19 +134,23 @@ def train(device, net, dataloader, val_loader, args):
     @trainer.on(Events.EPOCH_COMPLETED)
     def log_validation_results(trainer):
         net.eval()
-        writer.add_scalars('Training', {
-            'accuracy/accuracy':trainer.state.metrics['avg_acc'],
-            'loss/total':trainer.state.metrics['loss'],
-            'loss/clf':trainer.state.metrics['loss_clf'],
-            'loss/rank':trainer.state.metrics['loss_rank']
+        writer.add_scalars(f'{args.attribute}/Training/accuracy', {
+            'accuracy':trainer.state.metrics['avg_acc'],
+        }, trainer.state.epoch)
+        writer.add_scalars(f'{args.attribute}/Training/loss', {
+            'total':trainer.state.metrics['loss'],
+            'clf':trainer.state.metrics['loss_clf'],
+            'rank':trainer.state.metrics['loss_rank']
         }, trainer.state.epoch)
         evaluator.run(val_loader)
         metrics = evaluator.state.metrics
-        writer.add_scalars('Val', {
-            'accuracy/accuracy':metrics['avg_acc'],
-            'loss/total':metrics['loss'],
-            'loss/clf':metrics['loss_clf'],
-            'loss/rank':metrics['loss_rank']
+        writer.add_scalars(f'{args.attribute}/Val/accuracy', {
+            'accuracy':metrics['avg_acc'],
+        }, trainer.state.epoch)
+        writer.add_scalars(f'{args.attribute}/Val/loss', {
+            'total':metrics['loss'],
+            'clf':metrics['loss_clf'],
+            'rank':metrics['loss_rank']
         }, trainer.state.epoch)
         trainer.state.metrics['val_acc'] = metrics['avg_acc']
         
