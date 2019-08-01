@@ -11,12 +11,7 @@ future==0.17.1
 graphviz==0.11.1
 grpcio==1.22.0
 idna==2.8
-ipykernel==5.1.0
-ipython==7.2.0
-ipython-genutils==0.2.0
 jedi==0.13.2
-jupyter-client==5.2.4
-jupyter-core==4.4.0
 kiwisolver==1.0.1
 Markdown==3.1.1
 matplotlib==3.0.2
@@ -76,7 +71,6 @@ jupyter-client==5.2.4
 jupyter-core==4.4.0
 kiwisolver==1.0.1
 Markdown==3.1.1
-matplotlib==3.0.2
 networkx==2.2
 nibabel==2.3.3
 numpy==1.15.4
