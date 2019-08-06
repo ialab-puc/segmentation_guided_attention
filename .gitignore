@@ -16,3 +16,4 @@ placepulse
 *.tar.xz
 runs/*
 tensorboardX
+pp_cropped/*
