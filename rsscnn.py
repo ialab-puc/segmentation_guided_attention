@@ -18,8 +18,6 @@ class RSsCnn(nn.Module):
         output_size = self.cnn(x).size()
         self.dims = output_size[1]*2
         self.cnn_size = output_size
-        print(output_size)
-        print(self.dims)
         self.conv_factor= output_size[2] - 5 #should be 1 or 2
         self.fuse_conv_1 = nn.Conv2d(self.dims,self.dims,3)
         self.fuse_conv_2 = nn.Conv2d(self.dims,self.dims,3)
