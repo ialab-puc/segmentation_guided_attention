@@ -14,11 +14,13 @@ class RSsCnn(nn.Module):
     def __init__(self,model):
         super(RSsCnn, self).__init__()
         self.cnn = model(pretrained=True).features
-        x = torch.randn([3,224,224]).unsqueeze(0)
+        x = torch.randn([3,320,320]).unsqueeze(0)
         output_size = self.cnn(x).size()
         self.dims = output_size[1]*2
         self.cnn_size = output_size
-        self.conv_factor= output_size[2] % 5 #should be 1 or 2
+        print(output_size)
+        print(self.dims)
+        self.conv_factor= output_size[2] - 5 #should be 1 or 2
         self.fuse_conv_1 = nn.Conv2d(self.dims,self.dims,3)
         self.fuse_conv_2 = nn.Conv2d(self.dims,self.dims,3)
         self.fuse_conv_3 = nn.Conv2d(self.dims,self.dims,2)
@@ -190,8 +192,8 @@ def train(device, net, dataloader, val_loader, args):
     
 if __name__ == '__main__':
     from torchviz import make_dot
-    net = RSsCnn(models.alexnet)
-    x = torch.randn([3,224,224]).unsqueeze(0)
-    y = torch.randn([3,224,224]).unsqueeze(0)
+    net = RSsCnn(models.densenet121)
+    x = torch.randn([3,320,320]).unsqueeze(0)
+    y = torch.randn([3,320,320]).unsqueeze(0)
     fwd =  net(x,y)
-    print(make_dot(fwd, params=dict(net.named_parameters())))
+    print(fwd)

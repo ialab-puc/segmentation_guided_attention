@@ -35,7 +35,7 @@ if __name__ == '__main__':
     parser = arg_parse()
     args = parser.parse_args()
     print(args)
-    data=PlacePulseDataset(args.csv,args.dataset,transforms.Compose([Rescale((224,224)),ToTensor()]), args.attribute)
+    data=PlacePulseDataset(args.csv,args.dataset,transforms.Compose([Rescale((320,320)),ToTensor()]), args.attribute)
     len_data = len(data)
     train_len = int(len_data*0.8)
     val_len = len_data - train_len
