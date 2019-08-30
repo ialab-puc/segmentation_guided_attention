@@ -29,7 +29,7 @@ class RSsCnn(nn.Module):
         self.rank_fc_out = nn.Linear(4096, 1)
         self.conv_drop  = nn.Dropout(0.1)
         self.relu = nn.ReLU()
-        self.drop  = nn.Dropout(0.5)
+        self.drop  = nn.Dropout(0.3)
     
     def forward(self,left_image, right_image):
         batch_size = left_image.size()[0]
@@ -115,7 +115,7 @@ def train(device, net, dataloader, val_loader, args):
 
     clf_crit = nn.NLLLoss()
     rank_crit = nn.MarginRankingLoss(reduction='mean', margin=1)
-    optimizer = optim.Adam(net.parameters(), lr=args.lr, weight_decay=args.wd)
+    optimizer = optim.SGD(net.parameters(), lr=args.lr, weight_decay=args.wd, momentum=0.9)
     lamb = Variable(torch.FloatTensor([1]),requires_grad = False).cuda()[0]
 
     trainer = Engine(update)
