@@ -120,7 +120,7 @@ def train(device, net, dataloader, val_loader, args):
             label_matrix = label.clone().cpu().detach().numpy()
             dup = np.zeros(label_matrix.shape)
             dup[label_matrix==0] = 1
-            label_matrix = np.hstack((label_matrix,dup))
+            label_matrix = np.hstack((np.array([label_matrix]).T,np.array([dup]).T))
             rank_acc =  (rank_score(label_matrix,rank_pairs) - 0.5)/0.5
 
             loss_rank = rank_crit(output_rank_left, output_rank_right, rank_label)
@@ -155,8 +155,8 @@ def train(device, net, dataloader, val_loader, args):
     RunningAverage(output_transform=lambda x: x['rank_acc']).attach(evaluator, 'rank_acc')
     RunningAverage(Accuracy(output_transform=lambda x: (x['y_pred'],x['y']))).attach(evaluator,'avg_acc')
 
-    pbar = ProgressBar(persist=False)
-    pbar.attach(trainer,['loss','avg_acc', 'rank_acc'])
+    # pbar = ProgressBar(persist=False)
+    # pbar.attach(trainer,['loss','avg_acc', 'rank_acc'])
 
     # pbar = ProgressBar(persist=False)
     # pbar.attach(evaluator,['loss','loss_clf', 'loss_rank','avg_acc'])
