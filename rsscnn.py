@@ -2,12 +2,14 @@ import torchvision.models as models
 import torch.nn as nn
 import torch.optim as optim
 import torch
+import numpy as np
 from torch.autograd import Variable
 from ignite.engine import Engine, Events
 from ignite.metrics import Accuracy,Loss, RunningAverage
 from ignite.contrib.handlers import ProgressBar
 from ignite.handlers import ModelCheckpoint
 from tensorboardX import SummaryWriter
+from sklearn.metrics import label_ranking_average_precision_score as rank_score
 
 class RSsCnn(nn.Module):
     
@@ -80,15 +82,25 @@ def train(device, net, dataloader, val_loader, args):
         loss_clf = clf_crit(output_clf,label)
         output_rank_left = output_rank_left.view(output_rank_left.size()[0])
         output_rank_right = output_rank_right.view(output_rank_right.size()[0])
+
+        rank_pairs = np.array(list(zip(output_rank_left,output_rank_right)))
+        label_matrix = label.clone().cpu().detach().numpy()
+        dup = np.zeros(label_matrix.shape)
+        dup[label_matrix==0] = 1
+        label_matrix = np.hstack((np.array([label_matrix]).T,np.array([dup]).T))
+        rank_acc =  (rank_score(label_matrix,rank_pairs) - 0.5)/0.5
+
         loss_rank = rank_crit(output_rank_left, output_rank_right, rank_label)
-        loss = loss_clf + loss_rank
+        loss = loss_clf + loss_rank        
+
         loss.backward()
         optimizer.step()
         return  { 'loss':loss.item(), 
                 'loss_clf':loss_clf.item(), 
                 'loss_rank':loss_rank.item(),
                 'y':label,
-                'y_pred': output_clf
+                'y_pred': output_clf,
+                'rank_acc': rank_acc
                 }
 
     def inference(engine,data):
@@ -103,13 +115,22 @@ def train(device, net, dataloader, val_loader, args):
             loss_clf = clf_crit(output_clf,label)
             output_rank_left = output_rank_left.view(output_rank_left.size()[0])
             output_rank_right = output_rank_right.view(output_rank_right.size()[0])
+
+            rank_pairs = np.array(list(zip(output_rank_left,output_rank_right)))
+            label_matrix = label.clone().cpu().detach().numpy()
+            dup = np.zeros(label_matrix.shape)
+            dup[label_matrix==0] = 1
+            label_matrix = np.hstack((label_matrix,dup))
+            rank_acc =  (rank_score(label_matrix,rank_pairs) - 0.5)/0.5
+
             loss_rank = rank_crit(output_rank_left, output_rank_right, rank_label)
             loss = loss_clf + loss_rank
             return  { 'loss':loss.item(), 
                 'loss_clf':loss_clf.item(), 
                 'loss_rank':loss_rank.item(),
                 'y':label,
-                'y_pred': output_clf
+                'y_pred': output_clf,
+                'rank_acc': rank_acc
                 }
     net = net.to(device)
 
@@ -125,15 +146,17 @@ def train(device, net, dataloader, val_loader, args):
     RunningAverage(output_transform=lambda x: x['loss']).attach(trainer, 'loss')
     RunningAverage(output_transform=lambda x: x['loss_clf']).attach(trainer, 'loss_clf')
     RunningAverage(output_transform=lambda x: x['loss_rank']).attach(trainer, 'loss_rank')
+    RunningAverage(output_transform=lambda x: x['rank_acc']).attach(trainer, 'rank_acc')
     RunningAverage(Accuracy(output_transform=lambda x: (x['y_pred'],x['y']))).attach(trainer,'avg_acc')
 
     RunningAverage(output_transform=lambda x: x['loss']).attach(evaluator, 'loss')
     RunningAverage(output_transform=lambda x: x['loss_clf']).attach(evaluator, 'loss_clf')
     RunningAverage(output_transform=lambda x: x['loss_rank']).attach(evaluator, 'loss_rank')
+    RunningAverage(output_transform=lambda x: x['rank_acc']).attach(evaluator, 'rank_acc')
     RunningAverage(Accuracy(output_transform=lambda x: (x['y_pred'],x['y']))).attach(evaluator,'avg_acc')
 
-    # pbar = ProgressBar(persist=False)
-    # pbar.attach(trainer,['loss','loss_clf', 'loss_rank','avg_acc'])
+    pbar = ProgressBar(persist=False)
+    pbar.attach(trainer,['loss','avg_acc', 'rank_acc'])
 
     # pbar = ProgressBar(persist=False)
     # pbar.attach(evaluator,['loss','loss_clf', 'loss_rank','avg_acc'])
@@ -143,6 +166,7 @@ def train(device, net, dataloader, val_loader, args):
         net.eval()
         writer.add_scalars(f'{args.attribute}/Training/accuracy', {
             'accuracy':trainer.state.metrics['avg_acc'],
+            'rank_accuracy':trainer.state.metrics['rank_acc']
         }, trainer.state.epoch)
         writer.add_scalars(f'{args.attribute}/Training/loss', {
             'total':trainer.state.metrics['loss'],
@@ -153,6 +177,7 @@ def train(device, net, dataloader, val_loader, args):
         metrics = evaluator.state.metrics
         writer.add_scalars(f'{args.attribute}/Val/accuracy', {
             'accuracy':metrics['avg_acc'],
+            'rank_accuracy':metrics['rank_acc']
         }, trainer.state.epoch)
         writer.add_scalars(f'{args.attribute}/Val/loss', {
             'total':metrics['loss'],
@@ -197,7 +222,7 @@ def train(device, net, dataloader, val_loader, args):
     
 if __name__ == '__main__':
     from torchviz import make_dot
-    net = RSsCnn(models.densenet121)
+    net = RSsCnn(models.alexnet)
     x = torch.randn([3,320,320]).unsqueeze(0)
     y = torch.randn([3,320,320]).unsqueeze(0)
     fwd =  net(x,y)
