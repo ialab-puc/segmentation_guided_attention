@@ -72,17 +72,22 @@ def train(device, net, dataloader, val_loader, args):
         input_left, input_right, label = data['left_image'], data['right_image'], data['winner']
         input_left, input_right, label = input_left.to(device), input_right.to(device), label.to(device)
         rank_label = label.clone()
+        inverse_label = label.clone()
         label[label==-1] = 0
         # zero the parameter gradients
         optimizer.zero_grad()
         rank_label = rank_label.float()
-        # forward + backward + optimize
         output_clf,output_rank_left, output_rank_right = net(input_left,input_right)
 
+        #compute clf loss
         loss_clf = clf_crit(output_clf,label)
+
+        #compute ranking loss
         output_rank_left = output_rank_left.view(output_rank_left.size()[0])
         output_rank_right = output_rank_right.view(output_rank_right.size()[0])
+        loss_rank = rank_crit(output_rank_left, output_rank_right, rank_label)
 
+        #compute ranking accuracy
         rank_pairs = np.array(list(zip(output_rank_left,output_rank_right)))
         label_matrix = label.clone().cpu().detach().numpy()
         dup = np.zeros(label_matrix.shape)
@@ -90,11 +95,27 @@ def train(device, net, dataloader, val_loader, args):
         label_matrix = np.hstack((np.array([label_matrix]).T,np.array([dup]).T))
         rank_acc =  (rank_score(label_matrix,rank_pairs) - 0.5)/0.5
 
-        loss_rank = rank_crit(output_rank_left, output_rank_right, rank_label)
+        # backward step
         loss = loss_clf + loss_rank        
-
         loss.backward()
         optimizer.step()
+
+        #swapped forward
+        inverse_label*=-1 #swap label
+        inverse_rank_label = inverse_label.clone()
+        inverse_rank_label = inverse_rank_label.float()
+        inverse_label[inverse_label==-1] = 0
+        outputs, output_rank_left, output_rank_right = net(input_right,input_left) #pass swapped input
+        inverse_loss_clf = clf_crit(outputs, inverse_label)
+        #compute ranking loss
+        output_rank_left = output_rank_left.view(output_rank_left.size()[0])
+        output_rank_right = output_rank_right.view(output_rank_right.size()[0])
+        inverse_loss_rank = rank_crit(output_rank_left, output_rank_right, inverse_rank_label)
+        #swapped backward
+        inverse_loss = inverse_loss_clf + inverse_loss_rank
+        inverse_loss.backward()
+        optimizer.step()
+
         return  { 'loss':loss.item(), 
                 'loss_clf':loss_clf.item(), 
                 'loss_rank':loss_rank.item(),
