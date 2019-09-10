@@ -39,19 +39,19 @@ class PlacePulseDataset(Dataset):
 
 #  Transformers 
 
-class ToTensor(object):
-    """Convert ndarrays in sample to Tensors."""
+# class ToTensor(object):
+#     """Convert ndarrays in sample to Tensors."""
 
-    def __call__(self, sample):
-        left_image, right_image = sample['left_image'], sample['right_image']
+#     def __call__(self, sample):
+#         left_image, right_image = sample['left_image'], sample['right_image']
         
-        return {'left_image': ToTensor.transform_image(left_image),
-                'right_image': ToTensor.transform_image(right_image),
-                'winner': sample['winner'],
-                'cat': sample['cat']}
-    @classmethod
-    def transform_image(cls,image):
-        return torch.from_numpy(image.transpose((2, 0, 1))).float()
+#         return {'left_image': transforms.ToTensor()((left_image),
+#                 'right_image': ToTensor.transform_image(right_image),
+#                 'winner': sample['winner'],
+#                 'cat': sample['cat']}
+#     @classmethod
+#     def transform_image(cls,image):
+#         return torch.from_numpy(image.transpose((2, 0, 1))).float()
     
 class Rescale():
     
@@ -66,3 +66,14 @@ class Rescale():
                 'winner': sample['winner'],
                 'cat': sample['cat']}
         
+class AdaptTransform():
+    def __init__ (self,transform):
+        self.transform = transform
+    
+    def __call__(self, sample):
+        left_image, right_image = sample['left_image'], sample['right_image']
+        
+        return {'left_image': self.transform(left_image),
+                'right_image': self.transform(right_image),
+                'winner': sample['winner'],
+                'cat': sample['cat']}

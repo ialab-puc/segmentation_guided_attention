@@ -8,7 +8,7 @@ from torchvision import transforms
 from torch.utils.data import random_split, DataLoader
 import torchvision.models as models
 
-from data import PlacePulseDataset, ToTensor, Rescale
+from data import PlacePulseDataset, Rescale, AdaptTransform
 
 #script args
 def arg_parse():
@@ -35,7 +35,16 @@ if __name__ == '__main__':
     parser = arg_parse()
     args = parser.parse_args()
     print(args)
-    data=PlacePulseDataset(args.csv,args.dataset,transforms.Compose([Rescale((320,320)),ToTensor()]), args.attribute)
+    data=PlacePulseDataset(
+        args.csv,args.dataset,
+        transforms.Compose([
+            AdaptTransform(transforms.ToPILImage()),
+            AdaptTransform(transforms.RandomResizedCrop(320)),
+            AdaptTransform(transforms.RandomHorizontalFlip(p=0.3)),
+            AdaptTransform(transforms.ToTensor())
+            ]),
+        args.attribute
+        )
     len_data = len(data)
     train_len = int(len_data*0.8)
     val_len = len_data - train_len
