@@ -37,12 +37,6 @@ if __name__ == '__main__':
     print(args)
     data=PlacePulseDataset(
         args.csv,args.dataset,
-        transforms.Compose([
-            AdaptTransform(transforms.ToPILImage()),
-            AdaptTransform(transforms.RandomResizedCrop(320)),
-            AdaptTransform(transforms.RandomHorizontalFlip(p=0.3)),
-            AdaptTransform(transforms.ToTensor())
-            ]),
         args.attribute
         )
     len_data = len(data)
@@ -53,6 +47,17 @@ if __name__ == '__main__':
     print(len(train))
     print(len(val))
     print(len(test))
+    train.dataset.transform = transforms.Compose([
+            AdaptTransform(transforms.ToPILImage()),
+            AdaptTransform(transforms.RandomResizedCrop(320)),
+            AdaptTransform(transforms.RandomHorizontalFlip(p=0.3)),
+            AdaptTransform(transforms.ToTensor())
+            ])
+    val.dataset.transform = transforms.Compose([
+            AdaptTransform(transforms.ToPILImage()),
+            AdaptTransform(transforms.Resize((320,320))),
+            AdaptTransform(transforms.ToTensor())
+            ])
     dataloader = DataLoader(train, batch_size=args.batch_size,
                             shuffle=True, num_workers=args.num_workers)
     val_loader = DataLoader(val, batch_size=args.batch_size,
