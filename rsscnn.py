@@ -16,6 +16,8 @@ class RSsCnn(nn.Module):
     def __init__(self,model):
         super(RSsCnn, self).__init__()
         self.cnn = model(pretrained=True).features
+        for param in self.cnn.parameters():  # freeze cnn params
+            param.requires_grad = False
         x = torch.randn([3,320,320]).unsqueeze(0)
         output_size = self.cnn(x).size()
         self.dims = output_size[1]*2
@@ -27,7 +29,6 @@ class RSsCnn(nn.Module):
         self.fuse_fc = nn.Linear(self.dims*(self.conv_factor**2), 2)
         self.classifier = nn.LogSoftmax(dim=1)
         self.rank_fc_1 = nn.Linear(self.cnn_size[1]*self.cnn_size[2]*self.cnn_size[3], 4096)
-        self.rank_fc_2 = nn.Linear(4096, 4096)
         self.rank_fc_out = nn.Linear(4096, 1)
         self.conv_drop  = nn.Dropout(0.1)
         self.relu = nn.ReLU()
@@ -53,12 +54,6 @@ class RSsCnn(nn.Module):
         x_rank_left = self.relu(x_rank_left)
         x_rank_left = self.drop(x_rank_left)
         x_rank_right = self.rank_fc_1(x_rank_right)
-        x_rank_right = self.relu(x_rank_right)
-        x_rank_right = self.drop(x_rank_right)
-        x_rank_left = self.rank_fc_2(x_rank_left)
-        x_rank_left = self.relu(x_rank_left)
-        x_rank_left = self.drop(x_rank_left)
-        x_rank_right = self.rank_fc_2(x_rank_right)
         x_rank_right = self.relu(x_rank_right)
         x_rank_right = self.drop(x_rank_right)
         x_rank_left = self.rank_fc_out(x_rank_left)
