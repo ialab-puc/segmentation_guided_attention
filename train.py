@@ -49,8 +49,9 @@ if __name__ == '__main__':
     print(len(test))
     train.dataset.transform = transforms.Compose([
             AdaptTransform(transforms.ToPILImage()),
-            AdaptTransform(transforms.RandomResizedCrop(320)),
-            AdaptTransform(transforms.RandomHorizontalFlip(p=0.3)),
+            AdaptTransform(transforms.Resize((320,320))),
+            # AdaptTransform(transforms.RandomResizedCrop(320)),
+            # AdaptTransform(transforms.RandomHorizontalFlip(p=0.3)),
             AdaptTransform(transforms.ToTensor())
             ])
     val.dataset.transform = transforms.Compose([
