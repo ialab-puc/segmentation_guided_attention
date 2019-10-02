@@ -17,3 +17,5 @@ placepulse
 runs/*
 tensorboardX
 pp_cropped/*
+votes/*
+*.zip

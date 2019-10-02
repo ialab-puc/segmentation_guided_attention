@@ -5,6 +5,8 @@ import cv2
 
 count = 0
 SIZE_THRESHOLD = 12.0*1024
+PLACE_PULSE_PATH ='votes.csv'
+IMAGES_PATH= 'pp_cropped/'
 
 def validate_item(row,img_dir,images,total):
     global count
@@ -21,14 +23,27 @@ def filter_by_size(img_dir,row):
     return not(os.path.getsize(img_dir+left_img_name) <= SIZE_THRESHOLD or os.path.getsize(img_dir+right_img_name) <= SIZE_THRESHOLD)
     
 if __name__ == '__main__':
-    PLACE_PULSE_PATH ='votes.csv'
-    IMAGES_PATH= 'placepulse/'
-    CROPPED_PATH = 'pp_cropped/'
+
     data = pd.read_csv(PLACE_PULSE_PATH)
     imgs = set(listdir(IMAGES_PATH))
     total = len(data)
     print(total)
-    data = data[data.apply(lambda x: validate_item(x,IMAGES_PATH,imgs,total) and filter_by_size(IMAGES_PATH,x), axis=1)]
+    data = data[data.apply(lambda x: validate_item(x,IMAGES_PATH,imgs,total) and filter_by_size(IMAGES_PATH,x), axis=1)]    
     print()
+    print(len(data))
+    data['delete']=0
+    # set deletable rows to 1
+    _hash = {}
+    for row in data.iterrows():
+        if (row[1]['left_id'],row[1]['right_id'],row[1]['category']) in _hash:
+            data.loc[row[0], 'delete'] = 1
+            if _hash[(row[1]['left_id'],row[1]['right_id'],row[1]['category'])][1] != row[1]['winner']:
+                if data.loc[_hash[(row[1]['left_id'],row[1]['right_id'],row[1]['category'])][0],'delete'] != 1:
+                    data.loc[_hash[(row[1]['left_id'],row[1]['right_id'],row[1]['category'])][0],'delete'] = 1    
+        else:
+            _hash[(row[1]['left_id'],row[1]['right_id'],row[1]['category'])] = (row[0],row[1]['winner'])
+    # delete rows
+    data = data[data['delete'] != 1]
+    del data['delete']
     print(len(data))
     data.to_csv('votes_clean.csv', header=True, index=False)
