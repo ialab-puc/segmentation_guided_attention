@@ -14,7 +14,7 @@ from data import PlacePulseDataset, Rescale, AdaptTransform
 def arg_parse():
     parser = argparse.ArgumentParser(description='Training place pulse')
     parser.add_argument('--cuda', help="1 to run with cuda else 0", default=1, type=bool)
-    parser.add_argument('--csv', help="dataset csv path", default="votes_clean.csv", type=str)
+    parser.add_argument('--csv', help="path to placepulse csv dirs", default="votes/", type=str)
     parser.add_argument('--dataset', help="dataset images directory path", default="placepulse/", type=str)
     parser.add_argument('--attribute', help="placepulse attribute to train on", default="wealthy", type=str,  choices=['wealthy','lively', 'depressing', 'safety','boring','beautiful'])
     parser.add_argument('--batch_size', help="batch size", default=32, type=int)
@@ -35,30 +35,26 @@ if __name__ == '__main__':
     parser = arg_parse()
     args = parser.parse_args()
     print(args)
-    data=PlacePulseDataset(
-        args.csv,args.dataset,
-        args.attribute
-        )
-    len_data = len(data)
-    train_len = int(len_data*0.8)
-    val_len = len_data - train_len
-    test_len = 0
-    train,val,test = random_split(data,[train_len , val_len, test_len])
-    print(len(train))
-    print(len(val))
-    print(len(test))
-    train.dataset.transform = transforms.Compose([
+    train=PlacePulseDataset(
+        f'{args.csv}/{args.attribute}/train.csv',
+        args.dataset,
+        transform=transforms.Compose([
             AdaptTransform(transforms.ToPILImage()),
             AdaptTransform(transforms.Resize((320,320))),
             # AdaptTransform(transforms.RandomResizedCrop(320)),
             # AdaptTransform(transforms.RandomHorizontalFlip(p=0.3)),
             AdaptTransform(transforms.ToTensor())
             ])
-    val.dataset.transform = transforms.Compose([
+        )
+    val=train=PlacePulseDataset(
+        f'{args.csv}/{args.attribute}/val.csv',
+        args.dataset,
+        transform=transforms.Compose([
             AdaptTransform(transforms.ToPILImage()),
             AdaptTransform(transforms.Resize((320,320))),
             AdaptTransform(transforms.ToTensor())
             ])
+        )
     dataloader = DataLoader(train, batch_size=args.batch_size,
                             shuffle=True, num_workers=args.num_workers)
     val_loader = DataLoader(val, batch_size=args.batch_size,
