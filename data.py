@@ -23,7 +23,7 @@ class PlacePulseDataset(Dataset):
         return len(self.placepulse_data)
     
     def __getitem__(self,idx):
-        
+        #TODO: TIME this
         if type(idx) == torch.Tensor:
             idx = idx.tolist()
         left_img_name = os.path.join(self.img_dir, '{}.jpg'.format(self.placepulse_data.iloc[idx, 0]))

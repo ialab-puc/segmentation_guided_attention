@@ -18,7 +18,7 @@ class RSsCnn(nn.Module):
         self.cnn = model(pretrained=True).features
         for param in self.cnn.parameters():  # freeze cnn params
             param.requires_grad = False
-        x = torch.randn([3,320,320]).unsqueeze(0)
+        x = torch.randn([3,244,244]).unsqueeze(0)
         output_size = self.cnn(x).size()
         self.dims = output_size[1]*2
         self.cnn_size = output_size
@@ -72,8 +72,11 @@ def train(device, net, dataloader, val_loader, args):
         # zero the parameter gradients
         optimizer.zero_grad()
         rank_label = rank_label.float()
+
+        #TODO: Time: forward pass
         output_clf,output_rank_left, output_rank_right = net(input_left,input_right)
 
+        #TODO: TIME: LOSS and ACC
         #compute clf loss
         loss_clf = clf_crit(output_clf,label)
 
@@ -90,11 +93,14 @@ def train(device, net, dataloader, val_loader, args):
         label_matrix = np.hstack((np.array([label_matrix]).T,np.array([dup]).T))
         rank_acc =  (rank_score(label_matrix,rank_pairs) - 0.5)/0.5
 
+
+        #TODO: TIME backward
         # backward step
         loss = loss_clf + loss_rank        
         loss.backward()
         optimizer.step()
-
+        
+        # TODO: TIME SWAPPED FORWARD + BACKWARD
         #swapped forward
         inverse_label*=-1 #swap label
         inverse_rank_label = inverse_label.clone()
@@ -121,6 +127,7 @@ def train(device, net, dataloader, val_loader, args):
 
     def inference(engine,data):
         with torch.no_grad():
+            # TODO: time validation
             input_left, input_right, label = data['left_image'], data['right_image'], data['winner']
             input_left, input_right, label = input_left.to(device), input_right.to(device), label.to(device)
             rank_label = label.clone()
@@ -239,7 +246,7 @@ def train(device, net, dataloader, val_loader, args):
 if __name__ == '__main__':
     from torchviz import make_dot
     net = RSsCnn(models.alexnet)
-    x = torch.randn([3,320,320]).unsqueeze(0)
-    y = torch.randn([3,320,320]).unsqueeze(0)
+    x = torch.randn([3,244,244]).unsqueeze(0)
+    y = torch.randn([3,244,244]).unsqueeze(0)
     fwd =  net(x,y)
     print(fwd)

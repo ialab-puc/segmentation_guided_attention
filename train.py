@@ -40,8 +40,8 @@ if __name__ == '__main__':
         args.dataset,
         transform=transforms.Compose([
             AdaptTransform(transforms.ToPILImage()),
-            AdaptTransform(transforms.Resize((320,320))),
-            # AdaptTransform(transforms.RandomResizedCrop(320)),
+            AdaptTransform(transforms.Resize((244,244))),
+            # AdaptTransform(transforms.RandomResizedCrop(244)),
             # AdaptTransform(transforms.RandomHorizontalFlip(p=0.3)),
             AdaptTransform(transforms.ToTensor())
             ])
@@ -51,7 +51,7 @@ if __name__ == '__main__':
         args.dataset,
         transform=transforms.Compose([
             AdaptTransform(transforms.ToPILImage()),
-            AdaptTransform(transforms.Resize((320,320))),
+            AdaptTransform(transforms.Resize((244,244))),
             AdaptTransform(transforms.ToTensor())
             ])
         )
