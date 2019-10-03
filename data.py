@@ -1,7 +1,7 @@
 import os
 import pandas as pd
 import torch
-from skimage import io, transform
+from skimage import io
 from torch.utils.data import Dataset
 from torchvision import transforms
 
@@ -32,7 +32,7 @@ class PlacePulseDataset(Dataset):
         right_image = io.imread(right_img_name)
         winner = self.label[self.placepulse_data.iloc[idx, 2]]
         cat = self.placepulse_data.iloc[idx, -1]
-        sample = {'left_image': left_image, 'right_image':right_image,'winner': winner, 'cat':cat}
+        sample = {'left_image': left_image, 'right_image':right_image,'winner': winner}
         if self.transform:
             sample = self.transform(sample)
         return sample
@@ -53,18 +53,17 @@ class PlacePulseDataset(Dataset):
 #     def transform_image(cls,image):
 #         return torch.from_numpy(image.transpose((2, 0, 1))).float()
     
-class Rescale():
+# class Rescale():
     
-    def __init__ (self,output_size):
-        self.output_size = output_size
+#     def __init__ (self,output_size):
+#         self.output_size = output_size
     
-    def __call__(self, sample):
-        left_image, right_image = sample['left_image'], sample['right_image']
+#     def __call__(self, sample):
+#         left_image, right_image = sample['left_image'], sample['right_image']
         
-        return {'left_image': transform.resize(left_image,self.output_size,anti_aliasing=True,mode='constant'),
-                'right_image': transform.resize(right_image,self.output_size,anti_aliasing=True,mode='constant'),
-                'winner': sample['winner'],
-                'cat': sample['cat']}
+#         return {'left_image': transform.resize(left_image,self.output_size,anti_aliasing=True,mode='constant'),
+#                 'right_image': transform.resize(right_image,self.output_size,anti_aliasing=True,mode='constant'),
+#                 'winner': sample['winner']}
         
 class AdaptTransform():
     def __init__ (self,transform):
@@ -75,5 +74,4 @@ class AdaptTransform():
         
         return {'left_image': self.transform(left_image),
                 'right_image': self.transform(right_image),
-                'winner': sample['winner'],
-                'cat': sample['cat']}
+                'winner': sample['winner']}

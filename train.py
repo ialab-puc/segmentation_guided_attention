@@ -8,7 +8,7 @@ from torchvision import transforms
 from torch.utils.data import random_split, DataLoader
 import torchvision.models as models
 
-from data import PlacePulseDataset, Rescale, AdaptTransform
+from data import PlacePulseDataset, AdaptTransform
 
 #script args
 def arg_parse():
