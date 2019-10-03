@@ -19,3 +19,4 @@ tensorboardX
 pp_cropped/*
 votes/*
 *.zip
+logs/*

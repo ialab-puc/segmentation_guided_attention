@@ -83,8 +83,8 @@ def train(device, net, dataloader, val_loader, args):
         end = timer()
         logger.info(f'FORWARD,{end-start}')
 
-        #TODO: TIME: LOSS and ACC
         #compute clf loss
+        start = timer()
         loss_clf = clf_crit(output_clf,label)
 
         #compute ranking loss
@@ -99,16 +99,21 @@ def train(device, net, dataloader, val_loader, args):
         dup[label_matrix==0] = 1
         label_matrix = np.hstack((np.array([label_matrix]).T,np.array([dup]).T))
         rank_acc =  (rank_score(label_matrix,rank_pairs) - 0.5)/0.5
-
+        loss = loss_clf + loss_rank        
+        end = timer()
+        logger.info(f'METRICS,{end-start}')
 
         #TODO: TIME backward
         # backward step
-        loss = loss_clf + loss_rank        
+        start = timer()
         loss.backward()
         optimizer.step()
+        end = timer()
+        logger.info(f'BACKWARD,{end-start}')
         
         # TODO: TIME SWAPPED FORWARD + BACKWARD
         #swapped forward
+        start = timer()
         inverse_label*=-1 #swap label
         inverse_rank_label = inverse_label.clone()
         inverse_rank_label = inverse_rank_label.float()
@@ -123,7 +128,8 @@ def train(device, net, dataloader, val_loader, args):
         inverse_loss = inverse_loss_clf + inverse_loss_rank
         inverse_loss.backward()
         optimizer.step()
-
+        end = timer()
+        logger.info(f'SWAPPED,{end-start}')
         return  { 'loss':loss.item(), 
                 'loss_clf':loss_clf.item(), 
                 'loss_rank':loss_rank.item(),
@@ -134,7 +140,7 @@ def train(device, net, dataloader, val_loader, args):
 
     def inference(engine,data):
         with torch.no_grad():
-            # TODO: time validation
+            start = timer()
             input_left, input_right, label = data['left_image'], data['right_image'], data['winner']
             input_left, input_right, label = input_left.to(device), input_right.to(device), label.to(device)
             rank_label = label.clone()
@@ -155,6 +161,8 @@ def train(device, net, dataloader, val_loader, args):
 
             loss_rank = rank_crit(output_rank_left, output_rank_right, rank_label)
             loss = loss_clf + loss_rank
+            end = timer()
+            logger.info(f'INFERENCE,{end-start}')
             return  { 'loss':loss.item(), 
                 'loss_clf':loss_clf.item(), 
                 'loss_rank':loss_rank.item(),
