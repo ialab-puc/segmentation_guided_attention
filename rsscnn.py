@@ -11,6 +11,11 @@ from ignite.handlers import ModelCheckpoint
 from tensorboardX import SummaryWriter
 from sklearn.metrics import label_ranking_average_precision_score as rank_score
 
+
+import logging
+from setup_logger import logger
+from timeit import default_timer as timer
+
 class RSsCnn(nn.Module):
     
     def __init__(self,model):
@@ -73,8 +78,10 @@ def train(device, net, dataloader, val_loader, args):
         optimizer.zero_grad()
         rank_label = rank_label.float()
 
-        #TODO: Time: forward pass
+        start = timer()
         output_clf,output_rank_left, output_rank_right = net(input_left,input_right)
+        end = timer()
+        logger.info(f'FORWARD,{end-start}')
 
         #TODO: TIME: LOSS and ACC
         #compute clf loss

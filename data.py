@@ -5,6 +5,10 @@ from skimage import io
 from torch.utils.data import Dataset
 from torchvision import transforms
 
+import logging
+from setup_logger import logger
+from timeit import default_timer as timer
+
 ## Data loader class
 class PlacePulseDataset(Dataset):
     
@@ -23,7 +27,7 @@ class PlacePulseDataset(Dataset):
         return len(self.placepulse_data)
     
     def __getitem__(self,idx):
-        #TODO: TIME this
+        start = timer()
         if type(idx) == torch.Tensor:
             idx = idx.tolist()
         left_img_name = os.path.join(self.img_dir, '{}.jpg'.format(self.placepulse_data.iloc[idx, 0]))
@@ -35,6 +39,8 @@ class PlacePulseDataset(Dataset):
         sample = {'left_image': left_image, 'right_image':right_image,'winner': winner}
         if self.transform:
             sample = self.transform(sample)
+        end = timer()
+        logger.info(f'DATALOADER,{end-start}')
         return sample
 
 #  Transformers 
