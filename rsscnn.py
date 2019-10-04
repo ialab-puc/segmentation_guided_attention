@@ -81,7 +81,7 @@ def train(device, net, dataloader, val_loader, args):
         start = timer()
         output_clf,output_rank_left, output_rank_right = net(input_left,input_right)
         end = timer()
-        logger.info(f'FORWARD,{end-start}')
+        logger.info(f'FORWARD,{end-start:.4f}')
 
         #compute clf loss
         start = timer()
@@ -101,7 +101,7 @@ def train(device, net, dataloader, val_loader, args):
         rank_acc =  (rank_score(label_matrix,rank_pairs) - 0.5)/0.5
         loss = loss_clf + loss_rank        
         end = timer()
-        logger.info(f'METRICS,{end-start}')
+        logger.info(f'METRICS,{end-start:.4f}')
 
         #TODO: TIME backward
         # backward step
@@ -109,7 +109,7 @@ def train(device, net, dataloader, val_loader, args):
         loss.backward()
         optimizer.step()
         end = timer()
-        logger.info(f'BACKWARD,{end-start}')
+        logger.info(f'BACKWARD,{end-start:.4f}')
         
         # TODO: TIME SWAPPED FORWARD + BACKWARD
         #swapped forward
@@ -129,7 +129,7 @@ def train(device, net, dataloader, val_loader, args):
         inverse_loss.backward()
         optimizer.step()
         end = timer()
-        logger.info(f'SWAPPED,{end-start}')
+        logger.info(f'SWAPPED,{end-start:.4f}')
         return  { 'loss':loss.item(), 
                 'loss_clf':loss_clf.item(), 
                 'loss_rank':loss_rank.item(),
@@ -162,7 +162,7 @@ def train(device, net, dataloader, val_loader, args):
             loss_rank = rank_crit(output_rank_left, output_rank_right, rank_label)
             loss = loss_clf + loss_rank
             end = timer()
-            logger.info(f'INFERENCE,{end-start}')
+            logger.info(f'INFERENCE,{end-start:.4f}')
             return  { 'loss':loss.item(), 
                 'loss_clf':loss_clf.item(), 
                 'loss_rank':loss_rank.item(),

@@ -40,7 +40,7 @@ class PlacePulseDataset(Dataset):
         if self.transform:
             sample = self.transform(sample)
         end = timer()
-        logger.info(f'DATALOADER,{end-start}')
+        logger.info(f'DATALOADER,{end-start:.4f}')
         return sample
 
 #  Transformers 
