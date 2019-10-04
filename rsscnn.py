@@ -11,6 +11,11 @@ from ignite.handlers import ModelCheckpoint
 from tensorboardX import SummaryWriter
 from sklearn.metrics import label_ranking_average_precision_score as rank_score
 
+
+import logging
+from setup_logger import logger
+from timeit import default_timer as timer
+
 class RSsCnn(nn.Module):
     
     def __init__(self,model):
@@ -18,7 +23,7 @@ class RSsCnn(nn.Module):
         self.cnn = model(pretrained=True).features
         for param in self.cnn.parameters():  # freeze cnn params
             param.requires_grad = False
-        x = torch.randn([3,320,320]).unsqueeze(0)
+        x = torch.randn([3,244,244]).unsqueeze(0)
         output_size = self.cnn(x).size()
         self.dims = output_size[1]*2
         self.cnn_size = output_size
@@ -72,9 +77,14 @@ def train(device, net, dataloader, val_loader, args):
         # zero the parameter gradients
         optimizer.zero_grad()
         rank_label = rank_label.float()
+
+        start = timer()
         output_clf,output_rank_left, output_rank_right = net(input_left,input_right)
+        end = timer()
+        logger.info(f'FORWARD,{end-start:.4f}')
 
         #compute clf loss
+        start = timer()
         loss_clf = clf_crit(output_clf,label)
 
         #compute ranking loss
@@ -89,13 +99,21 @@ def train(device, net, dataloader, val_loader, args):
         dup[label_matrix==0] = 1
         label_matrix = np.hstack((np.array([label_matrix]).T,np.array([dup]).T))
         rank_acc =  (rank_score(label_matrix,rank_pairs) - 0.5)/0.5
-
-        # backward step
         loss = loss_clf + loss_rank        
+        end = timer()
+        logger.info(f'METRICS,{end-start:.4f}')
+
+        #TODO: TIME backward
+        # backward step
+        start = timer()
         loss.backward()
         optimizer.step()
-
+        end = timer()
+        logger.info(f'BACKWARD,{end-start:.4f}')
+        
+        # TODO: TIME SWAPPED FORWARD + BACKWARD
         #swapped forward
+        start = timer()
         inverse_label*=-1 #swap label
         inverse_rank_label = inverse_label.clone()
         inverse_rank_label = inverse_rank_label.float()
@@ -110,7 +128,8 @@ def train(device, net, dataloader, val_loader, args):
         inverse_loss = inverse_loss_clf + inverse_loss_rank
         inverse_loss.backward()
         optimizer.step()
-
+        end = timer()
+        logger.info(f'SWAPPED,{end-start:.4f}')
         return  { 'loss':loss.item(), 
                 'loss_clf':loss_clf.item(), 
                 'loss_rank':loss_rank.item(),
@@ -121,6 +140,7 @@ def train(device, net, dataloader, val_loader, args):
 
     def inference(engine,data):
         with torch.no_grad():
+            start = timer()
             input_left, input_right, label = data['left_image'], data['right_image'], data['winner']
             input_left, input_right, label = input_left.to(device), input_right.to(device), label.to(device)
             rank_label = label.clone()
@@ -141,6 +161,8 @@ def train(device, net, dataloader, val_loader, args):
 
             loss_rank = rank_crit(output_rank_left, output_rank_right, rank_label)
             loss = loss_clf + loss_rank
+            end = timer()
+            logger.info(f'INFERENCE,{end-start:.4f}')
             return  { 'loss':loss.item(), 
                 'loss_clf':loss_clf.item(), 
                 'loss_rank':loss_rank.item(),
@@ -239,7 +261,7 @@ def train(device, net, dataloader, val_loader, args):
 if __name__ == '__main__':
     from torchviz import make_dot
     net = RSsCnn(models.alexnet)
-    x = torch.randn([3,320,320]).unsqueeze(0)
-    y = torch.randn([3,320,320]).unsqueeze(0)
+    x = torch.randn([3,244,244]).unsqueeze(0)
+    y = torch.randn([3,244,244]).unsqueeze(0)
     fwd =  net(x,y)
     print(fwd)
