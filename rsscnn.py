@@ -103,7 +103,6 @@ def train(device, net, dataloader, val_loader, args):
         end = timer()
         logger.info(f'METRICS,{end-start:.4f}')
 
-        #TODO: TIME backward
         # backward step
         start = timer()
         loss.backward()
@@ -111,7 +110,6 @@ def train(device, net, dataloader, val_loader, args):
         end = timer()
         logger.info(f'BACKWARD,{end-start:.4f}')
         
-        # TODO: TIME SWAPPED FORWARD + BACKWARD
         #swapped forward
         start = timer()
         inverse_label*=-1 #swap label
