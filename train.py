@@ -46,7 +46,7 @@ if __name__ == '__main__':
             AdaptTransform(transforms.ToTensor())
             ])
         )
-    val=train=PlacePulseDataset(
+    val=PlacePulseDataset(
         f'{args.csv}/{args.attribute}/val.csv',
         args.dataset,
         transform=transforms.Compose([
