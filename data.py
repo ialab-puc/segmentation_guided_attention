@@ -5,20 +5,18 @@ from skimage import io
 from torch.utils.data import Dataset
 from torchvision import transforms
 
-import logging
-from setup_logger import logger
 from timeit import default_timer as timer
 
 ## Data loader class
 class PlacePulseDataset(Dataset):
     
-    def __init__(self,csv_file,img_dir,transform=None, cat=None, equal=False):
+    def __init__(self,csv_file,img_dir,transform=None, cat=None, equal=False,logger=None):
         self.placepulse_data = pd.read_csv(csv_file)
         if cat:
             self.placepulse_data = self.placepulse_data[self.placepulse_data['category'] == cat]
         if not equal:
             self.placepulse_data = self.placepulse_data[self.placepulse_data['winner'] != 'equal']
-        
+        self.logger = logger
         self.img_dir =  img_dir
         self.transform = transform
         self.label = {'left':1, 'right':-1,'equal':0}
@@ -40,7 +38,7 @@ class PlacePulseDataset(Dataset):
         if self.transform:
             sample = self.transform(sample)
         end = timer()
-        logger.info(f'DATALOADER,{end-start:.4f}')
+        self.logger.info(f'DATALOADER,{end-start:.4f}')
         return sample
 
 #  Transformers 

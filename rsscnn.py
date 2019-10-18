@@ -10,10 +10,6 @@ from ignite.contrib.handlers import ProgressBar
 from ignite.handlers import ModelCheckpoint
 from tensorboardX import SummaryWriter
 from sklearn.metrics import label_ranking_average_precision_score as rank_score
-
-
-import logging
-from setup_logger import logger
 from timeit import default_timer as timer
 
 class RSsCnn(nn.Module):
@@ -67,7 +63,7 @@ class RSsCnn(nn.Module):
 
 
 
-def train(device, net, dataloader, val_loader, args):
+def train(device, net, dataloader, val_loader, args,logger):
     def update(engine, data):
         input_left, input_right, label = data['left_image'], data['right_image'], data['winner']
         input_left, input_right, label = input_left.to(device), input_right.to(device), label.to(device)

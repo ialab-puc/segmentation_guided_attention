@@ -9,6 +9,11 @@ from torch.utils.data import random_split, DataLoader
 import torchvision.models as models
 
 from data import PlacePulseDataset, AdaptTransform
+import logging
+from datetime import date
+import os
+
+
 
 #script args
 def arg_parse():
@@ -35,6 +40,12 @@ if __name__ == '__main__':
     parser = arg_parse()
     args = parser.parse_args()
     print(args)
+    if 'logs' not in os.listdir():
+        os.mkdir('logs')
+    logging.basicConfig(format='%(message)s',filename=f'logs/{args.attribute}-{date.today().strftime("%d-%m-%Y")}.log')
+    logger = logging.getLogger('timer')
+    logger.setLevel(logging.INFO) #set the minimum level of message logging
+
     train=PlacePulseDataset(
         f'{args.csv}/{args.attribute}/train.csv',
         args.dataset,
@@ -44,7 +55,8 @@ if __name__ == '__main__':
             # AdaptTransform(transforms.RandomResizedCrop(244)),
             # AdaptTransform(transforms.RandomHorizontalFlip(p=0.3)),
             AdaptTransform(transforms.ToTensor())
-            ])
+            ]),
+        logger=logger
         )
     val=PlacePulseDataset(
         f'{args.csv}/{args.attribute}/val.csv',
@@ -53,7 +65,8 @@ if __name__ == '__main__':
             AdaptTransform(transforms.ToPILImage()),
             AdaptTransform(transforms.Resize((244,244))),
             AdaptTransform(transforms.ToTensor())
-            ])
+            ]),
+        logger=logger
         )
     dataloader = DataLoader(train, batch_size=args.batch_size,
                             shuffle=True, num_workers=args.num_workers)
@@ -92,6 +105,6 @@ if __name__ == '__main__':
             args.epoch
         ))))
     
-    train(device,net,dataloader,val_loader, args)
+    train(device,net,dataloader,val_loader, args, logger)
 
 
