@@ -89,6 +89,9 @@ def train(device, net, dataloader, val_loader, args,logger):
         loss_rank = rank_crit(output_rank_left, output_rank_right, rank_label)
         loss = loss_clf + loss_rank
         
+        end = timer()
+        logger.info(f'LOSS,{end-start:.4f}')
+        start = timer()
         #compute ranking accuracy
         rank_pairs = np.array(list(zip(output_rank_left,output_rank_right)))
         label_matrix = label.clone().cpu().detach().numpy()
@@ -98,7 +101,7 @@ def train(device, net, dataloader, val_loader, args,logger):
         rank_acc =  (rank_score(label_matrix,rank_pairs) - 0.5)/0.5
         
         end = timer()
-        logger.info(f'METRICS,{end-start:.4f}')
+        logger.info(f'RANK-ACC,{end-start:.4f}')
 
         # backward step
         start = timer()
@@ -128,7 +131,7 @@ def train(device, net, dataloader, val_loader, args,logger):
         #swapped backward
         inverse_loss = inverse_loss_clf + inverse_loss_rank
         end = timer()
-        logger.info(f'SWAPPED-METRICS,{end-start:.4f}')
+        logger.info(f'SWAPPED-LOSS,{end-start:.4f}')
         start = timer()
         inverse_loss.backward()
         optimizer.step()
