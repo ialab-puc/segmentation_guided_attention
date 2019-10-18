@@ -50,7 +50,7 @@ class SsCnn(nn.Module):
         x = self.classifier(x)
         return x
 
-def train(device, net, dataloader, val_loader, args):
+def train(device, net, dataloader, val_loader, args, logger):
     device = device
     net = net.to(device)
 
