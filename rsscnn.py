@@ -87,7 +87,8 @@ def train(device, net, dataloader, val_loader, args,logger):
         output_rank_left = output_rank_left.view(output_rank_left.size()[0])
         output_rank_right = output_rank_right.view(output_rank_right.size()[0])
         loss_rank = rank_crit(output_rank_left, output_rank_right, rank_label)
-
+        loss = loss_clf + loss_rank
+        
         #compute ranking accuracy
         rank_pairs = np.array(list(zip(output_rank_left,output_rank_right)))
         label_matrix = label.clone().cpu().detach().numpy()
@@ -95,7 +96,7 @@ def train(device, net, dataloader, val_loader, args,logger):
         dup[label_matrix==0] = 1
         label_matrix = np.hstack((np.array([label_matrix]).T,np.array([dup]).T))
         rank_acc =  (rank_score(label_matrix,rank_pairs) - 0.5)/0.5
-        loss = loss_clf + loss_rank        
+        
         end = timer()
         logger.info(f'METRICS,{end-start:.4f}')
 
@@ -112,7 +113,13 @@ def train(device, net, dataloader, val_loader, args,logger):
         inverse_rank_label = inverse_label.clone()
         inverse_rank_label = inverse_rank_label.float()
         inverse_label[inverse_label==-1] = 0
+        end = timer()
+        logger.info(f'SWAPPED-SETUP,{end-start:.4f}')
+        start = timer()
         outputs, output_rank_left, output_rank_right = net(input_right,input_left) #pass swapped input
+        end = timer()
+        logger.info(f'SWAPPED-FORWARD,{end-start:.4f}')
+        start = timer()
         inverse_loss_clf = clf_crit(outputs, inverse_label)
         #compute ranking loss
         output_rank_left = output_rank_left.view(output_rank_left.size()[0])
@@ -120,10 +127,14 @@ def train(device, net, dataloader, val_loader, args,logger):
         inverse_loss_rank = rank_crit(output_rank_left, output_rank_right, inverse_rank_label)
         #swapped backward
         inverse_loss = inverse_loss_clf + inverse_loss_rank
+        end = timer()
+        logger.info(f'SWAPPED-METRICS,{end-start:.4f}')
+        start = timer()
         inverse_loss.backward()
         optimizer.step()
         end = timer()
-        logger.info(f'SWAPPED,{end-start:.4f}')
+        logger.info(f'SWAPPED-BACKWARD,{end-start:.4f}')
+        
         return  { 'loss':loss.item(), 
                 'loss_clf':loss_clf.item(), 
                 'loss_rank':loss_rank.item(),
