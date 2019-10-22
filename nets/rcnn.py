@@ -106,7 +106,8 @@ def train(device, net, dataloader, val_loader, args,logger):
             rank_pairs = np.array(list(zip(output_rank_left,output_rank_right)))
             label_matrix = label.clone().cpu().detach().numpy()
             dup = np.zeros(label_matrix.shape)
-            dup[label_matrix==-1.0] = 1
+            label_matrix[label_matrix==-1] = 0
+            dup[label_matrix==0] = 1
             label_matrix = np.hstack((np.array([label_matrix]).T,np.array([dup]).T))
             rank_acc =  (rank_score(label_matrix,rank_pairs) - 0.5)/0.5
             end = timer()
