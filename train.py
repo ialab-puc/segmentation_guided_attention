@@ -79,11 +79,11 @@ if __name__ == '__main__':
         device = torch.device("cpu")
 
     if args.model=="sscnn":
-        from sscnn import SsCnn as Net
-        from sscnn import train
+        from nets.sscnn import SsCnn as Net
+        from nets.sscnn import train
     else:
-        from rsscnn import RSsCnn as Net
-        from rsscnn import train
+        from nets.rsscnn import RSsCnn as Net
+        from nets.rsscnn import train
 
     resnet18 = models.resnet101
     alexnet = models.alexnet
