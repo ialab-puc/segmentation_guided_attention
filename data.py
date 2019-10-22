@@ -40,34 +40,6 @@ class PlacePulseDataset(Dataset):
         end = timer()
         self.logger.info(f'DATALOADER,{end-start:.4f}')
         return sample
-
-#  Transformers 
-
-# class ToTensor(object):
-#     """Convert ndarrays in sample to Tensors."""
-
-#     def __call__(self, sample):
-#         left_image, right_image = sample['left_image'], sample['right_image']
-        
-#         return {'left_image': transforms.ToTensor()((left_image),
-#                 'right_image': ToTensor.transform_image(right_image),
-#                 'winner': sample['winner'],
-#                 'cat': sample['cat']}
-#     @classmethod
-#     def transform_image(cls,image):
-#         return torch.from_numpy(image.transpose((2, 0, 1))).float()
-    
-# class Rescale():
-    
-#     def __init__ (self,output_size):
-#         self.output_size = output_size
-    
-#     def __call__(self, sample):
-#         left_image, right_image = sample['left_image'], sample['right_image']
-        
-#         return {'left_image': transform.resize(left_image,self.output_size,anti_aliasing=True,mode='constant'),
-#                 'right_image': transform.resize(right_image,self.output_size,anti_aliasing=True,mode='constant'),
-#                 'winner': sample['winner']}
         
 class AdaptTransform():
     def __init__ (self,transform):
