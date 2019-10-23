@@ -28,7 +28,7 @@ def arg_parse():
     parser.add_argument('--wd', help="weight decay regularization", default=0.0, type=float)
     parser.add_argument('--num_workers', help="number of workers for data loader", default=4, type=int)
     parser.add_argument('--model_dir', help="directory to load and save models", default='models/', type=str)
-    parser.add_argument('--model', help="model to use, sscnn or rsscnn", default='sscnn', type=str, choices=['rscnn','scnn'])
+    parser.add_argument('--model', help="model to use, sscnn or rsscnn", default='sscnn', type=str, choices=['rsscnn','sscnn','rcnn'])
     parser.add_argument('--epoch', help="epoch to load training", default=1, type=int)
     parser.add_argument('--max_epochs', help="maximum training epochs", default=10, type=int)
     parser.add_argument('--cuda_id', help="gpu id", default=0, type=int)
@@ -79,11 +79,14 @@ if __name__ == '__main__':
         device = torch.device("cpu")
 
     if args.model=="sscnn":
-        from sscnn import SsCnn as Net
-        from sscnn import train
+        from nets.sscnn import SsCnn as Net
+        from nets.sscnn import train
+    elif args.model=="rcnn":
+        from nets.rcnn import RCnn as Net
+        from nets.rcnn import train
     else:
-        from rsscnn import RSsCnn as Net
-        from rsscnn import train
+        from nets.rsscnn import RSsCnn as Net
+        from nets.rsscnn import train
 
     resnet18 = models.resnet101
     alexnet = models.alexnet

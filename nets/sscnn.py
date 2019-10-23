@@ -1,5 +1,5 @@
 # coding: utf-8
-
+### FIXME: DEPRECATED FILE
 ## dependencies
 
 import torchvision.models as models
