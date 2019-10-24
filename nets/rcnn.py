@@ -138,13 +138,13 @@ def train(device, net, dataloader, val_loader, args,logger):
 
     @trainer.on(Events.EPOCH_COMPLETED)
     def log_validation_results(trainer):
-        net.eval()
         writer.add_scalars(f'{args.attribute}/Training/accuracy', {
             'rank_accuracy':trainer.state.metrics['rank_acc']
         }, trainer.state.epoch)
         writer.add_scalars(f'{args.attribute}/Training/loss', {
             'total':trainer.state.metrics['loss']
         }, trainer.state.epoch)
+        net.eval()
         evaluator.run(val_loader)
         metrics = evaluator.state.metrics
         writer.add_scalars(f'{args.attribute}/Val/accuracy', {
@@ -157,13 +157,13 @@ def train(device, net, dataloader, val_loader, args,logger):
         
         print("Training Results - Epoch: {}  Avg Train accuracy: {:.5f} Avg Train loss: {:.6e}".format(
                 trainer.state.epoch,
-                trainer.state.metrics['loss'],
-                trainer.state.metrics['rank_acc'])
+                trainer.state.metrics['rank_acc']),
+                trainer.state.metrics['loss']
             )
         print("Training Results - Epoch: {}  Avg Val accuracy: {:.5f} Avg Val loss: {:.6e}".format(
                 trainer.state.epoch,
-                metrics['loss'],
-                metrics['rank_acc'])
+                metrics['rank_acc']),
+                metrics['loss']
             )
         net.train()
 
