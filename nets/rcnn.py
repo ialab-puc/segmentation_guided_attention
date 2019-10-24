@@ -157,13 +157,13 @@ def train(device, net, dataloader, val_loader, args,logger):
         
         print("Training Results - Epoch: {}  Avg Train accuracy: {:.5f} Avg Train loss: {:.6e}".format(
                 trainer.state.epoch,
-                trainer.state.metrics['rank_acc']),
-                trainer.state.metrics['loss']
+                trainer.state.metrics['rank_acc'],
+                trainer.state.metrics['loss'])
             )
         print("Training Results - Epoch: {}  Avg Val accuracy: {:.5f} Avg Val loss: {:.6e}".format(
                 trainer.state.epoch,
-                metrics['rank_acc']),
-                metrics['loss']
+                metrics['rank_acc'],
+                metrics['loss'])
             )
         net.train()
 
