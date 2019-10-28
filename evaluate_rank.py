@@ -28,7 +28,12 @@ BATCH_SIZE=2
 MODEL_DIR = 'models'
 
 MODELS = {
-    'wealthy':'rcnn_vgg_wealthy_model_10.pth'
+    'wealthy':'rcnn_vgg_wealthy_model_10.pth',
+    'depressing':'rcnn_vgg_depressing_model_1.pth',
+    'safety':'rcnn_vgg_safety_model_9.pth',
+    'lively':'rcnn_vgg_lively_model_3.pth',
+    'boring':'rcnn_vgg_boring_model_2.pth',
+    'beautiful': 'rcnn_vgg_beautiful_model_2.pth'
 }
 
 def get_image_batch(data,start,end,image_dir):
