@@ -47,12 +47,7 @@ def forward(net,batch):
             transforms.Resize((244,244)),
             transforms.ToTensor()
             ])
-    result = None
-    for image in batch:
-        if result is None:
-            result = transform(image)
-        else:
-            result = torch.stack((result,transform(image)))
+    result = torch.stack([ transform(image) for image in batch])
     with torch.no_grad():   
         return net.forward(result)
 
