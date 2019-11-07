@@ -20,3 +20,5 @@ pp_cropped/*
 votes/*
 *.zip
 logs/*
+*.csv
+*.json
