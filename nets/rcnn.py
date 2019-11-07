@@ -11,9 +11,10 @@ from ignite.handlers import ModelCheckpoint
 from tensorboardX import SummaryWriter
 from sklearn.metrics import label_ranking_average_precision_score as rank_score
 from timeit import default_timer as timer
+from radam import RAdam
 
 class RCnn(nn.Module):
-    
+
     def __init__(self,model):
         super(RCnn, self).__init__()
         self.cnn = model(pretrained=True).features
@@ -27,7 +28,7 @@ class RCnn(nn.Module):
         self.rank_fc_out = nn.Linear(4096, 1)
         self.relu = nn.ReLU()
         self.drop  = nn.Dropout(0.3)
-    
+
     def forward(self,left_image, right_image):
         batch_size = left_image.size()[0]
         left = self.cnn(left_image)
@@ -64,7 +65,7 @@ def train(device, net, dataloader, val_loader, args,logger):
         output_rank_left = output_rank_left.view(output_rank_left.size()[0])
         output_rank_right = output_rank_right.view(output_rank_right.size()[0])
         loss = rank_crit(output_rank_left, output_rank_right, label)
-        
+
         end = timer()
         logger.info(f'LOSS,{end-start:.4f}')
         start = timer()
@@ -76,7 +77,7 @@ def train(device, net, dataloader, val_loader, args,logger):
         dup[label_matrix==0] = 1
         label_matrix = np.hstack((np.array([label_matrix]).T,np.array([dup]).T))
         rank_acc =  (rank_score(label_matrix,rank_pairs) - 0.5)/0.5
-        
+
         end = timer()
         logger.info(f'RANK-ACC,{end-start:.4f}')
 
@@ -86,8 +87,8 @@ def train(device, net, dataloader, val_loader, args,logger):
         optimizer.step()
         end = timer()
         logger.info(f'BACKWARD,{end-start:.4f}')
-        
-        return  { 'loss':loss.item(), 
+
+        return  { 'loss':loss.item(),
                 'rank_acc': rank_acc
                 }
 
@@ -112,13 +113,13 @@ def train(device, net, dataloader, val_loader, args,logger):
             rank_acc =  (rank_score(label_matrix,rank_pairs) - 0.5)/0.5
             end = timer()
             logger.info(f'INFERENCE,{end-start:.4f}')
-            return  { 'loss':loss.item(), 
+            return  { 'loss':loss.item(),
                 'rank_acc': rank_acc
                 }
     net = net.to(device)
 
     rank_crit = nn.MarginRankingLoss(reduction='mean', margin=1)
-    optimizer = optim.SGD(net.parameters(), lr=args.lr, weight_decay=args.wd, momentum=0.9)
+    optimizer = RAdam(net.parameters(), lr=args.lr, weight_decay=args.wd)
 
     trainer = Engine(update)
     evaluator = Engine(inference)
@@ -154,7 +155,7 @@ def train(device, net, dataloader, val_loader, args,logger):
             'total':metrics['loss']
         }, trainer.state.epoch)
         trainer.state.metrics['val_acc'] = metrics['rank_acc']
-        
+
         print("Training Results - Epoch: {}  Avg Train accuracy: {:.5f} Avg Train loss: {:.6e}".format(
                 trainer.state.epoch,
                 trainer.state.metrics['rank_acc'],
@@ -184,7 +185,7 @@ def train(device, net, dataloader, val_loader, args,logger):
         evaluator.add_event_handler(Events.STARTED, start_epoch)
 
     trainer.run(dataloader,max_epochs=args.max_epochs)
-    
+
 if __name__ == '__main__':
     from torchviz import make_dot
     net = RSsCnn(models.alexnet)
