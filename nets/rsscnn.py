@@ -14,11 +14,12 @@ from timeit import default_timer as timer
 
 class RSsCnn(nn.Module):
     
-    def __init__(self,model):
+    def __init__(self,model, finetune=False):
         super(RSsCnn, self).__init__()
         self.cnn = model(pretrained=True).features
-        for param in self.cnn.parameters():  # freeze cnn params
-            param.requires_grad = False
+        if not finetune:
+            for param in self.cnn.parameters():  # freeze cnn params
+                param.requires_grad = False
         x = torch.randn([3,244,244]).unsqueeze(0)
         output_size = self.cnn(x).size()
         self.dims = output_size[1]*2

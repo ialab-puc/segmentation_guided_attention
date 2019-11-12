@@ -15,11 +15,12 @@ from radam import RAdam
 
 class RCnn(nn.Module):
 
-    def __init__(self,model):
+    def __init__(self,model, finetune=False):
         super(RCnn, self).__init__()
         self.cnn = model(pretrained=True).features
-        for param in self.cnn.parameters():  # freeze cnn params
-            param.requires_grad = False
+        if not finetune:
+            for param in self.cnn.parameters():  # freeze cnn params
+                param.requires_grad = False
         x = torch.randn([3,244,244]).unsqueeze(0)
         output_size = self.cnn(x).size()
         self.dims = output_size[1]*2
@@ -131,11 +132,11 @@ def train(device, net, dataloader, val_loader, args,logger):
     RunningAverage(output_transform=lambda x: x['loss']).attach(evaluator, 'loss')
     RunningAverage(output_transform=lambda x: x['rank_acc']).attach(evaluator, 'rank_acc')
 
-    # pbar = ProgressBar(persist=False)
-    # pbar.attach(trainer,['loss', 'rank_acc'])
+    pbar = ProgressBar(persist=False)
+    pbar.attach(trainer,['loss', 'rank_acc'])
 
-    # pbar = ProgressBar(persist=False)
-    # pbar.attach(evaluator,['loss','rank_acc'])
+    pbar = ProgressBar(persist=False)
+    pbar.attach(evaluator,['loss','rank_acc'])
 
     @trainer.on(Events.EPOCH_COMPLETED)
     def log_validation_results(trainer):

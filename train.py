@@ -33,6 +33,7 @@ def arg_parse():
     parser.add_argument('--max_epochs', help="maximum training epochs", default=10, type=int)
     parser.add_argument('--cuda_id', help="gpu id", default=0, type=int)
     parser.add_argument('--premodel', help="premodel to use, alex or vgg or dense", default='alex', type=str, choices=['alex','vgg','dense'])
+    parser.add_argument('--finetune','--ft', help="1 to finetune premodel else 0", default=0, type=bool)
     return parser
 
         
@@ -99,7 +100,7 @@ if __name__ == '__main__':
         'dense':models.densenet121
     }
 
-    net = Net(models[args.premodel])
+    net = Net(models[args.premodel], finetune=args.finetune)
     if args.resume:
         net.load_state_dict(torch.load(os.path.join(args.model_dir,'{}_{}_{}_model_{}.pth'.format(
             args.model,
