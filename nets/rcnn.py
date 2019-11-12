@@ -9,10 +9,9 @@ from ignite.metrics import Accuracy,Loss, RunningAverage
 from ignite.contrib.handlers import ProgressBar
 from ignite.handlers import ModelCheckpoint
 from tensorboardX import SummaryWriter
-from sklearn.metrics import label_ranking_average_precision_score as rank_score
 from timeit import default_timer as timer
 from radam import RAdam
-
+from utils.ranking import compute_ranking_loss, compute_ranking_accuracy
 class RCnn(nn.Module):
 
     def __init__(self,model, finetune=False):
@@ -63,22 +62,14 @@ def train(device, net, dataloader, val_loader, args,logger):
 
         #compute ranking loss
         start = timer()
-        output_rank_left = output_rank_left.view(output_rank_left.size()[0])
-        output_rank_right = output_rank_right.view(output_rank_right.size()[0])
-        loss = rank_crit(output_rank_left, output_rank_right, label)
-
+        loss = compute_ranking_loss(output_rank_left, output_rank_right, label, rank_crit)
         end = timer()
-        logger.info(f'LOSS,{end-start:.4f}')
-        start = timer()
-        #compute ranking accuracy
-        rank_pairs = np.array(list(zip(output_rank_left,output_rank_right)))
-        label_matrix = label.clone().cpu().detach().numpy()
-        dup = np.zeros(label_matrix.shape)
-        label_matrix[label_matrix==-1] = 0
-        dup[label_matrix==0] = 1
-        label_matrix = np.hstack((np.array([label_matrix]).T,np.array([dup]).T))
-        rank_acc =  (rank_score(label_matrix,rank_pairs) - 0.5)/0.5
 
+        logger.info(f'LOSS,{end-start:.4f}')
+
+        #compute ranking accuracy
+        start = timer()
+        rank_acc = compute_ranking_accuracy(output_rank_left, output_rank_right, label)
         end = timer()
         logger.info(f'RANK-ACC,{end-start:.4f}')
 
@@ -99,19 +90,9 @@ def train(device, net, dataloader, val_loader, args,logger):
             input_left, input_right, label = data['left_image'], data['right_image'], data['winner']
             input_left, input_right, label = input_left.to(device), input_right.to(device), label.to(device)
             label = label.float()
-            # forward
             output_rank_left, output_rank_right = net(input_left,input_right)
-            output_rank_left = output_rank_left.view(output_rank_left.size()[0])
-            output_rank_right = output_rank_right.view(output_rank_right.size()[0])
-            loss = rank_crit(output_rank_left, output_rank_right, label)
-
-            rank_pairs = np.array(list(zip(output_rank_left,output_rank_right)))
-            label_matrix = label.clone().cpu().detach().numpy()
-            dup = np.zeros(label_matrix.shape)
-            label_matrix[label_matrix==-1] = 0
-            dup[label_matrix==0] = 1
-            label_matrix = np.hstack((np.array([label_matrix]).T,np.array([dup]).T))
-            rank_acc =  (rank_score(label_matrix,rank_pairs) - 0.5)/0.5
+            loss = compute_ranking_loss(output_rank_left, output_rank_right, label, rank_crit)
+            rank_acc = compute_ranking_accuracy(output_rank_left, output_rank_right, label)
             end = timer()
             logger.info(f'INFERENCE,{end-start:.4f}')
             return  { 'loss':loss.item(),
