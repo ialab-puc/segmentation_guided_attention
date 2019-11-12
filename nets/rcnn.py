@@ -12,6 +12,7 @@ from tensorboardX import SummaryWriter
 from timeit import default_timer as timer
 from radam import RAdam
 from utils.ranking import compute_ranking_loss, compute_ranking_accuracy
+from utils.log import epoch_log
 class RCnn(nn.Module):
 
     def __init__(self,model, finetune=False):
@@ -122,34 +123,23 @@ def train(device, net, dataloader, val_loader, args,logger):
 
     @trainer.on(Events.EPOCH_COMPLETED)
     def log_validation_results(trainer):
-        writer.add_scalars(f'{args.attribute}/Training/accuracy', {
-            'rank_accuracy':trainer.state.metrics['rank_acc']
-        }, trainer.state.epoch)
-        writer.add_scalars(f'{args.attribute}/Training/loss', {
-            'total':trainer.state.metrics['loss']
-        }, trainer.state.epoch)
         net.eval()
         evaluator.run(val_loader)
-        metrics = evaluator.state.metrics
-        writer.add_scalars(f'{args.attribute}/Val/accuracy', {
-            'rank_accuracy':metrics['rank_acc']
-        }, trainer.state.epoch)
-        writer.add_scalars(f'{args.attribute}/Val/loss', {
-            'total':metrics['loss']
-        }, trainer.state.epoch)
-        trainer.state.metrics['val_acc'] = metrics['rank_acc']
-
-        print("Training Results - Epoch: {}  Avg Train accuracy: {:.5f} Avg Train loss: {:.6e}".format(
-                trainer.state.epoch,
-                trainer.state.metrics['rank_acc'],
-                trainer.state.metrics['loss'])
-            )
-        print("Training Results - Epoch: {}  Avg Val accuracy: {:.5f} Avg Val loss: {:.6e}".format(
-                trainer.state.epoch,
-                metrics['rank_acc'],
-                metrics['loss'])
-            )
+        trainer.state.metrics['val_acc'] = evaluator.state.metrics['rank_acc']
         net.train()
+        epoch_log(
+            {
+                "accuracy": { 'rank_accuracy':trainer.state.metrics['rank_acc'] },
+                "loss": { 'total':trainer.state.metrics['loss'] }
+            },
+            {
+                "accuracy": { 'rank_accuracy': evaluator.state.metrics['rank_acc'] },
+                "loss": { 'total':evaluator.state.metrics['loss'] }
+            },
+            writer,
+            args.attribute,
+            trainer.state.epoch
+        )
 
     handler = ModelCheckpoint(args.model_dir, '{}_{}_{}'.format(args.model, args.premodel, args.attribute),
                                 n_saved=1,
@@ -171,7 +161,7 @@ def train(device, net, dataloader, val_loader, args,logger):
 
 if __name__ == '__main__':
     from torchviz import make_dot
-    net = RSsCnn(models.alexnet)
+    net = RCnn(models.alexnet)
     x = torch.randn([3,244,244]).unsqueeze(0)
     y = torch.randn([3,244,244]).unsqueeze(0)
     fwd =  net(x,y)
