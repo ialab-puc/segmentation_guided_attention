@@ -9,11 +9,12 @@ from ignite.metrics import Accuracy,Loss, RunningAverage
 from ignite.contrib.handlers import ProgressBar
 from ignite.handlers import ModelCheckpoint
 from tensorboardX import SummaryWriter
-from sklearn.metrics import label_ranking_average_precision_score as rank_score
 from timeit import default_timer as timer
+from utils.ranking import compute_ranking_loss, compute_ranking_accuracy
+from utils.log import epoch_log
 
 class RSsCnn(nn.Module):
-    
+
     def __init__(self,model, finetune=False):
         super(RSsCnn, self).__init__()
         self.cnn = model(pretrained=True).features
@@ -35,7 +36,7 @@ class RSsCnn(nn.Module):
         self.conv_drop  = nn.Dropout(0.1)
         self.relu = nn.ReLU()
         self.drop  = nn.Dropout(0.3)
-    
+
     def forward(self,left_image, right_image):
         batch_size = left_image.size()[0]
         left = self.cnn(left_image)
@@ -85,22 +86,15 @@ def train(device, net, dataloader, val_loader, args,logger):
         loss_clf = clf_crit(output_clf,label)
 
         #compute ranking loss
-        output_rank_left = output_rank_left.view(output_rank_left.size()[0])
-        output_rank_right = output_rank_right.view(output_rank_right.size()[0])
-        loss_rank = rank_crit(output_rank_left, output_rank_right, rank_label)
+        loss_rank = compute_ranking_loss(output_rank_left, output_rank_right, label, rank_crit)
         loss = loss_clf + loss_rank
-        
+
         end = timer()
         logger.info(f'LOSS,{end-start:.4f}')
-        start = timer()
+
         #compute ranking accuracy
-        rank_pairs = np.array(list(zip(output_rank_left,output_rank_right)))
-        label_matrix = label.clone().cpu().detach().numpy()
-        dup = np.zeros(label_matrix.shape)
-        dup[label_matrix==0] = 1
-        label_matrix = np.hstack((np.array([label_matrix]).T,np.array([dup]).T))
-        rank_acc =  (rank_score(label_matrix,rank_pairs) - 0.5)/0.5
-        
+        start = timer()
+        rank_acc = compute_ranking_accuracy(output_rank_left, output_rank_right, label)
         end = timer()
         logger.info(f'RANK-ACC,{end-start:.4f}')
 
@@ -110,7 +104,7 @@ def train(device, net, dataloader, val_loader, args,logger):
         optimizer.step()
         end = timer()
         logger.info(f'BACKWARD,{end-start:.4f}')
-        
+
         #swapped forward
         start = timer()
         inverse_label*=-1 #swap label
@@ -126,9 +120,7 @@ def train(device, net, dataloader, val_loader, args,logger):
         start = timer()
         inverse_loss_clf = clf_crit(outputs, inverse_label)
         #compute ranking loss
-        output_rank_left = output_rank_left.view(output_rank_left.size()[0])
-        output_rank_right = output_rank_right.view(output_rank_right.size()[0])
-        inverse_loss_rank = rank_crit(output_rank_left, output_rank_right, inverse_rank_label)
+        inverse_loss_rank = compute_ranking_loss(output_rank_left, output_rank_right, label, rank_crit)
         #swapped backward
         inverse_loss = inverse_loss_clf + inverse_loss_rank
         end = timer()
@@ -138,9 +130,9 @@ def train(device, net, dataloader, val_loader, args,logger):
         optimizer.step()
         end = timer()
         logger.info(f'SWAPPED-BACKWARD,{end-start:.4f}')
-        
-        return  { 'loss':loss.item(), 
-                'loss_clf':loss_clf.item(), 
+
+        return  { 'loss':loss.item(),
+                'loss_clf':loss_clf.item(),
                 'loss_rank':loss_rank.item(),
                 'y':label,
                 'y_pred': output_clf,
@@ -158,22 +150,13 @@ def train(device, net, dataloader, val_loader, args,logger):
             # forward
             output_clf,output_rank_left, output_rank_right = net(input_left,input_right)
             loss_clf = clf_crit(output_clf,label)
-            output_rank_left = output_rank_left.view(output_rank_left.size()[0])
-            output_rank_right = output_rank_right.view(output_rank_right.size()[0])
-
-            rank_pairs = np.array(list(zip(output_rank_left,output_rank_right)))
-            label_matrix = label.clone().cpu().detach().numpy()
-            dup = np.zeros(label_matrix.shape)
-            dup[label_matrix==0] = 1
-            label_matrix = np.hstack((np.array([label_matrix]).T,np.array([dup]).T))
-            rank_acc =  (rank_score(label_matrix,rank_pairs) - 0.5)/0.5
-
-            loss_rank = rank_crit(output_rank_left, output_rank_right, rank_label)
+            loss_rank = compute_ranking_loss(output_rank_left, output_rank_right, label, rank_crit)
+            rank_acc = compute_ranking_accuracy(output_rank_left, output_rank_right, label)
             loss = loss_clf + loss_rank
             end = timer()
             logger.info(f'INFERENCE,{end-start:.4f}')
-            return  { 'loss':loss.item(), 
-                'loss_clf':loss_clf.item(), 
+            return  { 'loss':loss.item(),
+                'loss_clf':loss_clf.item(),
                 'loss_rank':loss_rank.item(),
                 'y':label,
                 'y_pred': output_clf,
@@ -212,43 +195,37 @@ def train(device, net, dataloader, val_loader, args,logger):
     @trainer.on(Events.EPOCH_COMPLETED)
     def log_validation_results(trainer):
         net.eval()
-        writer.add_scalars(f'{args.attribute}/Training/accuracy', {
-            'accuracy':trainer.state.metrics['avg_acc'],
-            'rank_accuracy':trainer.state.metrics['rank_acc']
-        }, trainer.state.epoch)
-        writer.add_scalars(f'{args.attribute}/Training/loss', {
-            'total':trainer.state.metrics['loss'],
-            'clf':trainer.state.metrics['loss_clf'],
-            'rank':trainer.state.metrics['loss_rank']
-        }, trainer.state.epoch)
         evaluator.run(val_loader)
-        metrics = evaluator.state.metrics
-        writer.add_scalars(f'{args.attribute}/Val/accuracy', {
-            'accuracy':metrics['avg_acc'],
-            'rank_accuracy':metrics['rank_acc']
-        }, trainer.state.epoch)
-        writer.add_scalars(f'{args.attribute}/Val/loss', {
-            'total':metrics['loss'],
-            'clf':metrics['loss_clf'],
-            'rank':metrics['loss_rank']
-        }, trainer.state.epoch)
-        trainer.state.metrics['val_acc'] = metrics['avg_acc']
-        
-        print("Training Results - Epoch: {}  Avg Train accuracy: {:.5f} Avg Train loss: {:.6e} Avg Train clf loss: {:.6e} Avg Train rank loss: {:.6e}".format(
-                trainer.state.epoch,
-                trainer.state.metrics['avg_acc'],
-                trainer.state.metrics['loss'],
-                trainer.state.metrics['loss_clf'],
-                trainer.state.metrics['loss_rank'])
-            )
-        print("Training Results - Epoch: {}  Avg Val accuracy: {:.5f} Avg Val loss: {:.6e} Avg Val clf loss: {:.6e} Avg Val rank loss: {:.6e}".format(
-                trainer.state.epoch,
-                metrics['avg_acc'],
-                metrics['loss'],
-                metrics['loss_clf'],
-                metrics['loss_rank'])
-            )
+        trainer.state.metrics['val_acc'] = evaluator.state.metrics['rank_acc']
         net.train()
+
+        epoch_log(
+            {
+                "accuracy":{
+                    'accuracy':trainer.state.metrics['avg_acc'],
+                    'rank_accuracy':trainer.state.metrics['rank_acc']
+                },
+                "loss": {
+                    'total':trainer.state.metrics['loss'],
+                    'clf':trainer.state.metrics['loss_clf'],
+                    'rank':trainer.state.metrics['loss_rank']
+                }
+            },
+            {
+                "accuracy":{
+                    'accuracy':evaluator.state.metrics['avg_acc'],
+                    'rank_accuracy':evaluator.state.metrics['rank_acc']
+                },
+                "loss": {
+                    'total':evaluator.state.metrics['loss'],
+                    'clf':evaluator.state.metrics['loss_clf'],
+                    'rank':evaluator.state.metrics['loss_rank']
+                }
+            },
+            writer,
+            args.attribute,
+            trainer.state.epoch
+        )
 
     handler = ModelCheckpoint(args.model_dir, '{}_{}_{}'.format(args.model, args.premodel, args.attribute),
                                 n_saved=1,
@@ -267,7 +244,7 @@ def train(device, net, dataloader, val_loader, args,logger):
         evaluator.add_event_handler(Events.STARTED, start_epoch)
 
     trainer.run(dataloader,max_epochs=args.max_epochs)
-    
+
 if __name__ == '__main__':
     from torchviz import make_dot
     net = RSsCnn(models.alexnet)
