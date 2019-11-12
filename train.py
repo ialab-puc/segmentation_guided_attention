@@ -34,6 +34,7 @@ def arg_parse():
     parser.add_argument('--cuda_id', help="gpu id", default=0, type=int)
     parser.add_argument('--premodel', help="premodel to use, alex or vgg or dense", default='alex', type=str, choices=['alex','vgg','dense'])
     parser.add_argument('--finetune','--ft', help="1 to finetune premodel else 0", default=0, type=bool)
+    parser.add_argument('--pbar','--pb', help="1 to add pbars else 0", default=0, type=bool)
     return parser
 
         

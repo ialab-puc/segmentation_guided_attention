@@ -113,11 +113,12 @@ def train(device, net, dataloader, val_loader, args,logger):
     RunningAverage(output_transform=lambda x: x['loss']).attach(evaluator, 'loss')
     RunningAverage(output_transform=lambda x: x['rank_acc']).attach(evaluator, 'rank_acc')
 
-    pbar = ProgressBar(persist=False)
-    pbar.attach(trainer,['loss', 'rank_acc'])
+    if args.pbar:
+        pbar = ProgressBar(persist=False)
+        pbar.attach(trainer,['loss', 'rank_acc'])
 
-    pbar = ProgressBar(persist=False)
-    pbar.attach(evaluator,['loss','rank_acc'])
+        pbar = ProgressBar(persist=False)
+        pbar.attach(evaluator,['loss','rank_acc'])
 
     @trainer.on(Events.EPOCH_COMPLETED)
     def log_validation_results(trainer):
