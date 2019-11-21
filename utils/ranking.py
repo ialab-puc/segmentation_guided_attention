@@ -7,8 +7,13 @@ def compute_ranking_loss(x_left,x_right,label,loss):
     return loss(output_left, output_right, label)
 
 def compute_ranking_accuracy(x_left, x_right, label):
-    rank_pairs = np.array(list(zip(x_left,x_right)))
-    label_matrix = label.clone().cpu().detach().numpy()
+    indexes = label!=0
+    aux_label = label[indexes]
+    if aux_label.size()[0] == 0: return 0.5 # extremely rare only ties case
+    indexes = indexes.cpu().detach().numpy()
+    indexes.dtype=bool
+    rank_pairs = np.array(list(zip(x_left,x_right)))[indexes]
+    label_matrix = aux_label.clone().cpu().detach().numpy()
     dup = np.zeros(label_matrix.shape)
     label_matrix[label_matrix==-1] = 0
     dup[label_matrix==0] = 1

@@ -35,6 +35,7 @@ def arg_parse():
     parser.add_argument('--premodel', help="premodel to use, alex or vgg or dense", default='alex', type=str, choices=['alex','vgg','dense'])
     parser.add_argument('--finetune','--ft', help="1 to finetune premodel else 0", default=0, type=bool)
     parser.add_argument('--pbar','--pb', help="1 to add pbars else 0", default=0, type=bool)
+    parser.add_argument('--equal','--eq', help="1 to use ties on data else 0", default=0, type=bool)
     return parser
 
         
@@ -58,7 +59,8 @@ if __name__ == '__main__':
             AdaptTransform(transforms.RandomHorizontalFlip(p=0.3)),
             AdaptTransform(transforms.ToTensor())
             ]),
-        logger=logger
+        logger=logger,
+        equal=args.equal
         )
     val=PlacePulseDataset(
         f'{args.csv}/{args.attribute}/val.csv',

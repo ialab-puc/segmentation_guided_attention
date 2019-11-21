@@ -13,6 +13,7 @@ from timeit import default_timer as timer
 from radam import RAdam
 from utils.ranking import compute_ranking_loss, compute_ranking_accuracy
 from utils.log import epoch_log
+from loss import RankingLoss
 class RCnn(nn.Module):
 
     def __init__(self,model, finetune=False):
@@ -100,8 +101,11 @@ def train(device, net, dataloader, val_loader, args,logger):
                 'rank_acc': rank_acc
                 }
     net = net.to(device)
-
-    rank_crit = nn.MarginRankingLoss(reduction='mean', margin=1)
+    if args.equal:
+        rank_crit = RankingLoss(margin=1)
+        print("using new loss")
+    else:
+        rank_crit = nn.MarginRankingLoss(reduction='mean', margin=1)
     optimizer = RAdam(net.parameters(), lr=args.lr, weight_decay=args.wd)
 
     trainer = Engine(update)
