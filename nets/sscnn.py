@@ -24,7 +24,7 @@ MODEL_PATH = 'model.pth'
 
 class SsCnn(nn.Module):
     
-    def __init__(self, model):
+    def __init__(self, model, finetune=False):
         super(SsCnn, self).__init__()
         self.cnn = model(pretrained=True).features
         x = torch.randn([3,224,224]).unsqueeze(0)
