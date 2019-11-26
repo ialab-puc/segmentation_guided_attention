@@ -102,10 +102,11 @@ def train(device, net, dataloader, val_loader, args,logger):
                 }
     net = net.to(device)
     if args.equal:
-        rank_crit = RankingLoss(margin=1)
+        rank_crit = RankingLoss(margin=1, tie_margin=0)
         print("using new loss")
     else:
         rank_crit = nn.MarginRankingLoss(reduction='mean', margin=1)
+    #optimizer = optim.SGD(net.parameters(), lr=args.lr, weight_decay=args.wd, momentum=0.9)
     optimizer = RAdam(net.parameters(), lr=args.lr, weight_decay=args.wd)
 
     trainer = Engine(update)
