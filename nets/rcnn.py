@@ -10,10 +10,10 @@ from ignite.contrib.handlers import ProgressBar
 from ignite.handlers import ModelCheckpoint
 from tensorboardX import SummaryWriter
 from timeit import default_timer as timer
-# from radam import RAdam
-# from utils.ranking import compute_ranking_loss, compute_ranking_accuracy
-# from utils.log import epoch_log
-# from loss import RankingLoss
+from radam import RAdam
+from utils.ranking import compute_ranking_loss, compute_ranking_accuracy
+from utils.log import epoch_log
+from loss import RankingLoss
 class RCnn(nn.Module):
 
     def __init__(self,model, finetune=False):
