@@ -32,7 +32,7 @@ def arg_parse():
     parser.add_argument('--epoch', help="epoch to load training", default=1, type=int)
     parser.add_argument('--max_epochs', help="maximum training epochs", default=10, type=int)
     parser.add_argument('--cuda_id', help="gpu id", default=0, type=int)
-    parser.add_argument('--premodel', help="premodel to use, alex or vgg or dense", default='alex', type=str, choices=['alex','vgg','dense'])
+    parser.add_argument('--premodel', help="premodel to use, alex or vgg or dense", default='alex', type=str, choices=['alex','vgg','dense','resnet'])
     parser.add_argument('--finetune','--ft', help="1 to finetune premodel else 0", default=0, type=bool)
     parser.add_argument('--pbar','--pb', help="1 to add pbars else 0", default=0, type=bool)
     parser.add_argument('--equal','--eq', help="1 to use ties on data else 0", default=0, type=bool)
@@ -92,15 +92,11 @@ if __name__ == '__main__':
         from nets.rsscnn import RSsCnn as Net
         from nets.rsscnn import train
 
-    resnet18 = models.resnet101
-    alexnet = models.alexnet
-    vgg16 = models.vgg19
-    dense = models.densenet121
-
     models = {
         'alex':models.alexnet,
         'vgg':models.vgg19,
-        'dense':models.densenet121
+        'dense':models.densenet121,
+        'resnet':models.resnet50
     }
 
     net = Net(models[args.premodel], finetune=args.finetune)
