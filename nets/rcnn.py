@@ -10,15 +10,18 @@ from ignite.contrib.handlers import ProgressBar
 from ignite.handlers import ModelCheckpoint
 from tensorboardX import SummaryWriter
 from timeit import default_timer as timer
-from radam import RAdam
-from utils.ranking import compute_ranking_loss, compute_ranking_accuracy
-from utils.log import epoch_log
-from loss import RankingLoss
+# from radam import RAdam
+# from utils.ranking import compute_ranking_loss, compute_ranking_accuracy
+# from utils.log import epoch_log
+# from loss import RankingLoss
 class RCnn(nn.Module):
 
     def __init__(self,model, finetune=False):
         super(RCnn, self).__init__()
-        self.cnn = model(pretrained=True).features
+        try:
+            self.cnn = model(pretrained=True).features
+        except AttributeError:
+            self.cnn = nn.Sequential(*list(model(pretrained=True).children())[:-1])
         if not finetune:
             for param in self.cnn.parameters():  # freeze cnn params
                 param.requires_grad = False
@@ -166,7 +169,7 @@ def train(device, net, dataloader, val_loader, args,logger):
 
 if __name__ == '__main__':
     from torchviz import make_dot
-    net = RCnn(models.alexnet)
+    net = RCnn(models.resnet50)
     x = torch.randn([3,244,244]).unsqueeze(0)
     y = torch.randn([3,244,244]).unsqueeze(0)
     fwd =  net(x,y)
