@@ -28,7 +28,7 @@ def arg_parse():
     parser.add_argument('--wd', help="weight decay regularization", default=0.0, type=float)
     parser.add_argument('--num_workers', help="number of workers for data loader", default=4, type=int)
     parser.add_argument('--model_dir', help="directory to load and save models", default='models/', type=str)
-    parser.add_argument('--model', help="model to use, sscnn or rsscnn", default='sscnn', type=str, choices=['rsscnn','sscnn','rcnn'])
+    parser.add_argument('--model', help="model to use, sscnn or rsscnn", default='rcnn', type=str, choices=['rsscnn','sscnn','rcnn', 'segrank'])
     parser.add_argument('--epoch', help="epoch to load training", default=1, type=int)
     parser.add_argument('--max_epochs', help="maximum training epochs", default=10, type=int)
     parser.add_argument('--cuda_id', help="gpu id", default=0, type=int)
@@ -38,7 +38,7 @@ def arg_parse():
     parser.add_argument('--equal','--eq', help="1 to use ties on data else 0", default=0, type=bool)
     return parser
 
-        
+
 if __name__ == '__main__':
     parser = arg_parse()
     args = parser.parse_args()
@@ -84,13 +84,18 @@ if __name__ == '__main__':
 
     if args.model=="sscnn":
         from nets.sscnn import SsCnn as Net
-        from nets.sscnn import train
+        from train_scripts.sscnn import train
     elif args.model=="rcnn":
         from nets.rcnn import RCnn as Net
-        from nets.rcnn import train
+        from train_scripts.rcnn import train
+    elif args.model == "segrank":
+        from nets.SegRank import SegRank as Net
+        from train_scripts.rcnn import train
+        import torch.distributed as dist
+        dist.init_process_group('gloo', init_method='file:///tmp/tmpfile', rank=0, world_size=1)
     else:
         from nets.rsscnn import RSsCnn as Net
-        from nets.rsscnn import train
+        from train_scripts.rsscnn import train
 
     models = {
         'alex':models.alexnet,
@@ -98,8 +103,8 @@ if __name__ == '__main__':
         'dense':models.densenet121,
         'resnet':models.resnet50
     }
-
-    net = Net(models[args.premodel], finetune=args.finetune)
+}
+    net = Net(models[args.premodel], finetune=args.finetune) if args.model != 'segrank' else Net()
     if args.resume:
         net.load_state_dict(torch.load(os.path.join(args.model_dir,'{}_{}_{}_model_{}.pth'.format(
             args.model,
@@ -107,7 +112,7 @@ if __name__ == '__main__':
             args.attribute,
             args.epoch
         ))))
-    
+
     train(device,net,dataloader,val_loader, args, logger)
 
 
