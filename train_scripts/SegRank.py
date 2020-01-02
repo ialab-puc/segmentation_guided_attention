@@ -30,3 +30,4 @@ RESTORE_FROM = 'segmentation/CS_scenes_40000.pth'
 
 
 device = torch.device("cuda:{}".format('0') if torch.cuda.is_available() else "cpu")
+

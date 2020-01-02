@@ -32,7 +32,7 @@ RESTORE_FROM = 'segmentation/CS_scenes_40000.pth'
 device = torch.device("cuda:{}".format('0') if torch.cuda.is_available() else "cpu")
 
 class SegRank(nn.Module):
-    def __init__(self,image_size=(340,480), restore=None):
+    def __init__(self,image_size=(340,480), restore=RESTORE_FROM):
         super(SegRank, self).__init__()
         self.image_h, self.image_w = image_size
         self.seg_net = Res_Deeplab(num_classes=NUM_CLASSES)
