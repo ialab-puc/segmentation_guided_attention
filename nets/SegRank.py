@@ -16,8 +16,6 @@ from segmentation.networks.pspnet import Res_Deeplab
 
 # constants
 IMG_MEAN = np.array((104.00698793,116.66876762,122.67891434), dtype=np.float32)
-DATA_DIRECTORY = 'pp_cropped'
-DATA_LIST_PATH = './dataset/list/placepulse/test.lst'
 IGNORE_LABEL = 255
 NUM_CLASSES = 19
 INPUT_SIZE = '340,480'
