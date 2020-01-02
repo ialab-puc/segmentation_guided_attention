@@ -91,6 +91,8 @@ if __name__ == '__main__':
     elif args.model == "segrank":
         from nets.SegRank import SegRank as Net
         from train_scripts.rcnn import train
+        import torch.distributed as dist
+        dist.init_process_group('gloo', init_method='file:///tmp/tmpfile', rank=0, world_size=1)
     else:
         from nets.rsscnn import RSsCnn as Net
         from train_scripts.rsscnn import train
@@ -101,7 +103,7 @@ if __name__ == '__main__':
         'dense':models.densenet121,
         'resnet':models.resnet50
     }
-
+}
     net = Net(models[args.premodel], finetune=args.finetune) if args.model != 'segrank' else Net()
     if args.resume:
         net.load_state_dict(torch.load(os.path.join(args.model_dir,'{}_{}_{}_model_{}.pth'.format(
