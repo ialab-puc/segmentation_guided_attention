@@ -103,7 +103,7 @@ if __name__ == '__main__':
         'dense':models.densenet121,
         'resnet':models.resnet50
     }
-}
+
     net = Net(models[args.premodel], finetune=args.finetune) if args.model != 'segrank' else Net()
     if args.resume:
         net.load_state_dict(torch.load(os.path.join(args.model_dir,'{}_{}_{}_model_{}.pth'.format(

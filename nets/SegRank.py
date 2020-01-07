@@ -37,7 +37,8 @@ class SegRank(nn.Module):
             param.requires_grad = False
         self.interp = lambda x: nn.functional.interpolate(x,size=image_size, mode='bilinear', align_corners=True)
         self.fc_seg = nn.Linear(NUM_CLASSES,1)
-        self.fc_1 = nn.Linear(self.image_h*self.image_w, 1000)
+        self.pool = nn.AvgPool2d(kernel_size=4, stride=4)
+        self.fc_1 = nn.Linear(self.image_h*self.image_w/16, 1000)
         self.relu = nn.ReLU()
         self.output = nn.Linear(1000, 1)
 
@@ -49,6 +50,7 @@ class SegRank(nn.Module):
         seg_output =  self.seg_net(batch)[0]
         seg_output = self.interp(seg_output).permute([0,2,3,1])
         x = self.fc_seg(seg_output).view(batch_size, self.image_h*self.image_w)
+        x = self.pool(x)
         x = self.fc_1(x)
         x = self.relu(x)
         x = self.output(x)
