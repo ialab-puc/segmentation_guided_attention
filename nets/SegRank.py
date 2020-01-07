@@ -22,7 +22,7 @@ INPUT_SIZE = '340,480'
 RESTORE_FROM = 'segmentation/CS_scenes_40000.pth'
 
 import warnings
-warnings.filterwarnings("ignore") 
+warnings.filterwarnings("ignore")
 
 device = torch.device("cuda:{}".format('0') if torch.cuda.is_available() else "cpu")
 
@@ -38,7 +38,7 @@ class SegRank(nn.Module):
         self.interp = lambda x: nn.functional.interpolate(x,size=image_size, mode='bilinear', align_corners=True)
         self.fc_seg = nn.Linear(NUM_CLASSES,1)
         self.pool = nn.AvgPool2d(kernel_size=4, stride=4)
-        self.fc_1 = nn.Linear(self.image_h*self.image_w/16, 1000)
+        self.fc_1 = nn.Linear(self.image_h*self.image_w//4, 1000)
         self.relu = nn.ReLU()
         self.output = nn.Linear(1000, 1)
 
@@ -49,8 +49,8 @@ class SegRank(nn.Module):
         batch_size = batch.size()[0]
         seg_output =  self.seg_net(batch)[0]
         seg_output = self.interp(seg_output).permute([0,2,3,1])
-        x = self.fc_seg(seg_output).view(batch_size, self.image_h*self.image_w)
-        x = self.pool(x)
+        x = self.fc_seg(seg_output)
+        x = self.pool(x).view(batch_size, self.image_h*self.image_w//4)
         x = self.fc_1(x)
         x = self.relu(x)
         x = self.output(x)
