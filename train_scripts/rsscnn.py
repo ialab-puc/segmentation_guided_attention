@@ -11,9 +11,9 @@ from ignite.handlers import ModelCheckpoint
 from tensorboardX import SummaryWriter
 from timeit import default_timer as timer
 from utils.ranking import compute_ranking_loss, compute_ranking_accuracy
-from utils.log import epoch_log
+from utils.log import tb_log
 
-def train(device, net, dataloader, val_loader, args,logger):
+def train(device, net, dataloader, val_loader, args, logger, experiment):
     def update(engine, data):
         input_left, input_right, label = data['left_image'], data['right_image'], data['winner']
         input_left, input_right, label = input_left.to(device), input_right.to(device), label.to(device)
@@ -147,7 +147,7 @@ def train(device, net, dataloader, val_loader, args,logger):
         trainer.state.metrics['val_acc'] = evaluator.state.metrics['rank_acc']
         net.train()
 
-        epoch_log(
+        tb_log(
             {
                 "accuracy":{
                     'accuracy':trainer.state.metrics['avg_acc'],
