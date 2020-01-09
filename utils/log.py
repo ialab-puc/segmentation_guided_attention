@@ -6,8 +6,8 @@ def tb_log(train_metrics,val_metrics,writer,attribute, epoch):
     for key,metric_hash in val_metrics.items():
         writer.add_scalars(f'{attribute}/Val/{key}', metric_hash, epoch)
 
-def console_log(train_metrics,val_metrics, epoch):
-    print(f"Results - Epoch: {epoch}")
+def console_log(train_metrics,val_metrics, epoch, step=None):
+    print(f"Results - Epoch: {epoch} - Step: {step}")
     print(json.dumps(train_metrics, indent=2))
     if val_metrics:
         print(f"Validation Results - Epoch: {epoch}")
