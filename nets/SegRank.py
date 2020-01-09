@@ -7,7 +7,7 @@ import sys
 import numpy as np
 import os
 from utils.ranking import compute_ranking_loss, compute_ranking_accuracy
-from utils.log import epoch_log
+from utils.log import console_log,comet_log
 
 
 # others

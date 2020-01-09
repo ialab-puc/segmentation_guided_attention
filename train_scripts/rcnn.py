@@ -8,14 +8,13 @@ from ignite.engine import Engine, Events
 from ignite.metrics import Accuracy,Loss, RunningAverage
 from ignite.contrib.handlers import ProgressBar
 from ignite.handlers import ModelCheckpoint
-from tensorboardX import SummaryWriter
 from timeit import default_timer as timer
 from radam import RAdam
 from utils.ranking import compute_ranking_loss, compute_ranking_accuracy
-from utils.log import epoch_log
+from utils.log import tb_log, console_log, comet_log
 from loss import RankingLoss
 
-def train(device, net, dataloader, val_loader, args,logger):
+def train(device, net, dataloader, val_loader, args, logger, experiment):
     def update(engine, data):
         input_left, input_right, label = data['left_image'], data['right_image'], data['winner']
         input_left, input_right, label = input_left.to(device), input_right.to(device), label.to(device)
@@ -77,8 +76,6 @@ def train(device, net, dataloader, val_loader, args,logger):
 
     trainer = Engine(update)
     evaluator = Engine(inference)
-
-    writer = SummaryWriter()
     RunningAverage(output_transform=lambda x: x['loss']).attach(trainer, 'loss')
     RunningAverage(output_transform=lambda x: x['rank_acc']).attach(trainer, 'rank_acc')
 
@@ -99,19 +96,18 @@ def train(device, net, dataloader, val_loader, args,logger):
         trainer.state.metrics['val_acc'] = evaluator.state.metrics['rank_acc']
         net.train()
         if hasattr(net,'partial_eval'): net.partial_eval()
-        epoch_log(
-            {
-                "accuracy": { 'rank_accuracy':trainer.state.metrics['rank_acc'] },
-                "loss": { 'total':trainer.state.metrics['loss'] }
-            },
-            {
-                "accuracy": { 'rank_accuracy': evaluator.state.metrics['rank_acc'] },
-                "loss": { 'total':evaluator.state.metrics['loss'] }
-            },
-            writer,
-            args.attribute,
-            trainer.state.epoch
+        metrics = {
+                'train_rank_accuracy':trainer.state.metrics['rank_acc'] ,
+                'train_loss':trainer.state.metrics['loss'],
+                'val_rank_accuracy': evaluator.state.metrics['rank_acc'],
+                'val_loss':evaluator.state.metrics['loss']
+            }
+        comet_log(
+            metrics,
+            trainer.state.epoch,
+            experiment
         )
+        console_log(metrics,{},trainer.state.epoch)
 
     handler = ModelCheckpoint(args.model_dir, '{}_{}_{}'.format(args.model, args.premodel, args.attribute),
                                 n_saved=1,

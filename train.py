@@ -3,6 +3,7 @@
 ## dependencies
 import argparse
 import os
+from comet_ml import Experiment
 import torch
 from torchvision import transforms
 from torch.utils.data import random_split, DataLoader
@@ -113,6 +114,25 @@ if __name__ == '__main__':
             args.epoch
         ))))
 
-    train(device,net,dataloader,val_loader, args, logger)
+    # Add the following code anywhere in your machine learning file
+    experiment = Experiment(api_key="03l7qYI9XyuZPB5a8dF9FNcSN",
+                            project_name="general", workspace="ironcadiz",
+                            auto_param_logging=False,
+                            auto_metric_logging=False)
+    experiment.add_tags([args.premodel, args.attribute, args.model])
+    experiment.log_parameters(
+        {
+            "batch_size": args.batch_size,
+            "finetune": args.finetune,
+            "ties": args.equal,
+            "learning_rate": args.lr,
+            "weight_decay": args.wd,
+            "attribute": args.attribute,
+            "model": args.model,
+            "premodel": args.premodel
+        }
+    )
+
+    train(device,net,dataloader,val_loader, args, logger, experiment)
 
 

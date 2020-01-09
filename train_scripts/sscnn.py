@@ -11,7 +11,7 @@ from ignite.metrics import Accuracy,Loss, RunningAverage
 from ignite.contrib.handlers import ProgressBar
 from ignite.handlers import ModelCheckpoint
 
-def train(device, net, dataloader, val_loader, args, logger):
+def train(device, net, dataloader, val_loader, args, logger, experiment):
     device = device
     net = net.to(device)
 
