@@ -56,6 +56,10 @@ class SegRank(nn.Module):
         x = self.output(x)
         return x
 
+    def partial_eval(self):
+        self.seg_net.eval()
+
+
 if __name__ == '__main__':
 
     import torch.distributed as dist

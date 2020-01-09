@@ -98,6 +98,7 @@ def train(device, net, dataloader, val_loader, args,logger):
         evaluator.run(val_loader)
         trainer.state.metrics['val_acc'] = evaluator.state.metrics['rank_acc']
         net.train()
+        if hasattr(net,'partial_eval'): net.partial_eval()
         epoch_log(
             {
                 "accuracy": { 'rank_accuracy':trainer.state.metrics['rank_acc'] },
