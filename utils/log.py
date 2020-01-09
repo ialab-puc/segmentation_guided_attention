@@ -13,5 +13,5 @@ def console_log(train_metrics,val_metrics, epoch):
         print(f"Validation Results - Epoch: {epoch}")
         print(json.dumps(val_metrics, indent=2))
 
-def comet_log(metrics, epoch, experiment):
-    experiment.log_metrics(metrics, epoch=epoch)
+def comet_log(metrics, experiment, epoch=None, step=None):
+    experiment.log_metrics(metrics, epoch=epoch, step=step)
