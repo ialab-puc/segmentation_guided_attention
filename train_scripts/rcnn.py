@@ -97,17 +97,31 @@ def train(device, net, dataloader, val_loader, args, logger, experiment):
         net.train()
         if hasattr(net,'partial_eval'): net.partial_eval()
         metrics = {
-                'train_rank_accuracy':trainer.state.metrics['rank_acc'] ,
+                'train_rank_accuracy':trainer.state.metrics['rank_acc'],
                 'train_loss':trainer.state.metrics['loss'],
                 'val_rank_accuracy': evaluator.state.metrics['rank_acc'],
                 'val_loss':evaluator.state.metrics['loss']
             }
         comet_log(
             metrics,
-            trainer.state.epoch,
-            experiment
+            experiment,
+            epoch=trainer.state.epoch
         )
         console_log(metrics,{},trainer.state.epoch)
+
+    @trainer.on(Events.ITERATION_COMPLETED)
+    def log_training_results(trainer):
+        if trainer.state.iteration %500 == 0:
+            metrics = {
+                    'train_rank_accuracy':trainer.state.metrics['rank_acc'],
+                    'train_loss':trainer.state.metrics['loss']
+                }
+            comet_log(
+                metrics,
+                experiment,
+                step=trainer.state.iteration,
+                epoch=trainer.state.epoch
+            )
 
     handler = ModelCheckpoint(args.model_dir, '{}_{}_{}'.format(args.model, args.premodel, args.attribute),
                                 n_saved=1,
