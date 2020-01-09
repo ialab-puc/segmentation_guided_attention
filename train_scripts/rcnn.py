@@ -111,7 +111,7 @@ def train(device, net, dataloader, val_loader, args, logger, experiment):
 
     @trainer.on(Events.ITERATION_COMPLETED)
     def log_training_results(trainer):
-        if trainer.state.iteration %500 == 0:
+        if trainer.state.iteration %100 == 0:
             metrics = {
                     'train_rank_accuracy':trainer.state.metrics['rank_acc'],
                     'train_loss':trainer.state.metrics['loss']
@@ -121,6 +121,12 @@ def train(device, net, dataloader, val_loader, args, logger, experiment):
                 experiment,
                 step=trainer.state.iteration,
                 epoch=trainer.state.epoch
+            )
+            console_log(
+                metrics,
+                {},
+                trainer.state.epoch,
+                step=trainer.state.iteration,
             )
 
     handler = ModelCheckpoint(args.model_dir, '{}_{}_{}'.format(args.model, args.premodel, args.attribute),
