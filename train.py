@@ -120,7 +120,7 @@ if __name__ == '__main__':
                             project_name="general", workspace="ironcadiz",
                             auto_param_logging=False,
                             auto_metric_logging=False,
-                            disable=(not args.comet))
+                            disabled=(not args.comet))
     experiment.add_tags([args.premodel, args.attribute, args.model])
     experiment.log_parameters(
         {
