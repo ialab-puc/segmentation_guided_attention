@@ -105,7 +105,8 @@ def train(device, net, dataloader, val_loader, args, logger, experiment):
         comet_log(
             metrics,
             experiment,
-            epoch=trainer.state.epoch
+            epoch=trainer.state.epoch,
+            step=trainer.state.epoch,
         )
         console_log(metrics,{},trainer.state.epoch)
 

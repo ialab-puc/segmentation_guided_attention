@@ -37,6 +37,7 @@ def arg_parse():
     parser.add_argument('--finetune','--ft', help="1 to finetune premodel else 0", default=0, type=bool)
     parser.add_argument('--pbar','--pb', help="1 to add pbars else 0", default=0, type=bool)
     parser.add_argument('--equal','--eq', help="1 to use ties on data else 0", default=0, type=bool)
+    parser.add_argument('--comet','--cm', help="1 to use comet else 0", default=0, type=bool)
     return parser
 
 
@@ -118,7 +119,8 @@ if __name__ == '__main__':
     experiment = Experiment(api_key="03l7qYI9XyuZPB5a8dF9FNcSN",
                             project_name="general", workspace="ironcadiz",
                             auto_param_logging=False,
-                            auto_metric_logging=False)
+                            auto_metric_logging=False,
+                            disable=(not args.comet))
     experiment.add_tags([args.premodel, args.attribute, args.model])
     experiment.log_parameters(
         {
