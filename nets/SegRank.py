@@ -11,8 +11,8 @@ from utils.log import console_log,comet_log
 
 
 # others
-sys.path.insert(0,'segmentation')
-from segmentation.networks.pspnet import Res_Deeplab
+sys.path.append('segmentation')
+from segmentation.networks.pspnet  import Seg_Model
 
 # constants
 IMG_MEAN = np.array((104.00698793,116.66876762,122.67891434), dtype=np.float32)
@@ -30,15 +30,18 @@ class SegRank(nn.Module):
     def __init__(self,image_size=(340,480), restore=RESTORE_FROM):
         super(SegRank, self).__init__()
         self.image_h, self.image_w = image_size
-        self.seg_net = Res_Deeplab(num_classes=NUM_CLASSES)
+        self.seg_net = Seg_Model(num_classes=NUM_CLASSES)
         self.seg_net.eval() # FIXME: code does not run without this
+
         if restore is not None: self.seg_net.load_state_dict(torch.load(restore, map_location=device))
+
         for param in self.seg_net.parameters():  # freeze segnet params
             param.requires_grad = False
-        self.interp = lambda x: nn.functional.interpolate(x,size=image_size, mode='bilinear', align_corners=True)
+
+        sample = torch.randn([3,self.image_h,self.image_w]).unsqueeze(0)
+        self.seg_dims = self.seg_net(sample)[0].size() # for layer size definition
         self.fc_seg = nn.Linear(NUM_CLASSES,1)
-        self.pool = nn.AvgPool2d(kernel_size=4, stride=4)
-        self.fc_1 = nn.Linear(self.image_h*self.image_w//4, 1000)
+        self.fc_1 = nn.Linear(self.seg_dims[2]*self.seg_dims[3], 1000)
         self.relu = nn.ReLU()
         self.output = nn.Linear(1000, 1)
 
@@ -48,9 +51,9 @@ class SegRank(nn.Module):
     def single_forward(self, batch):
         batch_size = batch.size()[0]
         seg_output =  self.seg_net(batch)[0]
-        seg_output = self.interp(seg_output).permute([0,2,3,1])
+        seg_output = seg_output.permute([0,2,3,1])
         x = self.fc_seg(seg_output)
-        x = self.pool(x).view(batch_size, self.image_h*self.image_w//4)
+        x = x.view(batch_size, self.seg_dims[2]*self.seg_dims[3])
         x = self.fc_1(x)
         x = self.relu(x)
         x = self.output(x)

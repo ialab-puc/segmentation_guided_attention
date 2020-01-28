@@ -49,7 +49,7 @@ if __name__ == '__main__':
         os.mkdir('logs')
     logging.basicConfig(format='%(message)s',filename=f'logs/{args.attribute}-{date.today().strftime("%d-%m-%Y")}.log')
     logger = logging.getLogger('timer')
-    logger.setLevel(logging.INFO) #set the minimum level of message logging
+    logger.setLevel(logging.WARNING) #set the minimum level of message logging
 
     train=PlacePulseDataset(
         f'{args.csv}/{args.attribute}/train.csv',
@@ -106,7 +106,7 @@ if __name__ == '__main__':
         'resnet':models.resnet50
     }
 
-    net = Net(models[args.premodel], finetune=args.finetune) if args.model != 'segrank' else Net()
+    net = Net(models[args.premodel], finetune=args.finetune) if args.model != 'segrank' else Net(image_size=(244,244))
     if args.resume:
         net.load_state_dict(torch.load(os.path.join(args.model_dir,'{}_{}_{}_model_{}.pth'.format(
             args.model,
