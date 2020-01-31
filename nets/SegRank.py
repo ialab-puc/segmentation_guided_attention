@@ -12,7 +12,7 @@ from utils.log import console_log,comet_log
 
 # others
 sys.path.insert(0,'segmentation')
-from segmentation.networks.pspnet import Res_Deeplab
+from segmentation.networks.pspnet import Seg_Model
 
 # constants
 IMG_MEAN = np.array((104.00698793,116.66876762,122.67891434), dtype=np.float32)
@@ -30,7 +30,7 @@ class SegRank(nn.Module):
     def __init__(self,image_size=(340,480), restore=RESTORE_FROM):
         super(SegRank, self).__init__()
         self.image_h, self.image_w = image_size
-        self.seg_net = Res_Deeplab(num_classes=NUM_CLASSES)
+        self.seg_net = Seg_Model(num_classes=NUM_CLASSES)
         self.seg_net.eval() # FIXME: code does not run without this
         if restore is not None: self.seg_net.load_state_dict(torch.load(restore, map_location=device))
         for param in self.seg_net.parameters():  # freeze segnet params
