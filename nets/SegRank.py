@@ -11,7 +11,7 @@ from utils.log import console_log,comet_log
 
 
 # others
-sys.path.insert(0,'segmentation')
+sys.path.append('segmentation')
 from segmentation.networks.pspnet import Seg_Model
 
 # constants
