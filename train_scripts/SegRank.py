@@ -13,7 +13,7 @@ import os
 # os.environ['MASTER_PORT'] = '29500'
 
 # others
-sys.path.insert(0,'segmentation')
+sys.path.append('segmentation')
 from segmentation.networks.pspnet import Res_Deeplab
 
 import torch.distributed as dist
