@@ -19,7 +19,7 @@ IMG_MEAN = np.array((104.00698793,116.66876762,122.67891434), dtype=np.float32)
 IGNORE_LABEL = 255
 NUM_CLASSES = 19
 INPUT_SIZE = '340,480'
-RESTORE_FROM = 'segmentation/CS_scenes_40000.pth'
+RESTORE_FROM = 'segmentation/CS_scenes_60000.pth'
 
 import warnings
 warnings.filterwarnings("ignore")
@@ -41,9 +41,13 @@ class SegRank(nn.Module):
         sample = torch.randn([3,self.image_h,self.image_w]).unsqueeze(0)
         self.seg_dims = self.seg_net(sample)[0].size() # for layer size definition
         self.fc_seg = nn.Linear(NUM_CLASSES,1)
+        self.drop = nn.Dropout(0.25)
         self.fc_1 = nn.Linear(self.seg_dims[2]*self.seg_dims[3], 1000)
+        self.bn_1 = nn.BatchNorm1d(1000)
+        self.fc_2 = nn.Linear(1000,500)
+        self.bn_2 = nn.BatchNorm1d(500)
         self.relu = nn.ReLU()
-        self.output = nn.Linear(1000, 1)
+        self.output = nn.Linear(500, 1)
 
     def forward(self, left_batch, right_batch):
         return self.single_forward(left_batch), self.single_forward(right_batch)
@@ -56,6 +60,10 @@ class SegRank(nn.Module):
         x = x.view(batch_size, self.seg_dims[2]*self.seg_dims[3])
         x = self.fc_1(x)
         x = self.relu(x)
+        x = self.drop(x)
+        x = self.fc_2(x)
+        x = self.relu(x)
+        x = self.drop(x)
         x = self.output(x)
         return x
 
