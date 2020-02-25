@@ -59,8 +59,10 @@ class SegRank(nn.Module):
         x = x.view(batch_size, self.seg_dims[2]*self.seg_dims[3])
         x = self.fc_1(x)
         x = self.relu(x)
+        x = self.bn_1(x)
         x = self.fc_2(x)
         x = self.relu(x)
+        x = self.bn_2(x)
         x = self.output(x)
         return x
 
