@@ -38,6 +38,7 @@ def arg_parse():
     parser.add_argument('--pbar','--pb', help="1 to add pbars else 0", default=0, type=bool)
     parser.add_argument('--equal','--eq', help="1 to use ties on data else 0", default=0, type=bool)
     parser.add_argument('--comet','--cm', help="1 to use comet else 0", default=0, type=bool)
+    parser.add_argument('--tag','--t', help="extra tag for comet and model name", default='', type=str)
     return parser
 
 
@@ -75,9 +76,9 @@ if __name__ == '__main__':
         logger=logger
         )
     dataloader = DataLoader(train, batch_size=args.batch_size,
-                            shuffle=True, num_workers=args.num_workers)
+                            shuffle=True, num_workers=args.num_workers, drop_last=True)
     val_loader = DataLoader(val, batch_size=args.batch_size,
-                            shuffle=True, num_workers=args.num_workers)
+                            shuffle=True, num_workers=args.num_workers, drop_last=True)
 
     if args.cuda:
         device = torch.device("cuda:{}".format(args.cuda_id) if torch.cuda.is_available() else "cpu")
@@ -121,7 +122,9 @@ if __name__ == '__main__':
                             auto_param_logging=False,
                             auto_metric_logging=False,
                             disabled=(not args.comet))
-    experiment.add_tags([args.premodel, args.attribute, args.model])
+    tags = [args.premodel, args.attribute, args.model]
+    if args.tag: tags.append(args.tag)
+    experiment.add_tags(tags)
     experiment.log_parameters(
         {
             "batch_size": args.batch_size,

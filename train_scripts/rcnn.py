@@ -129,8 +129,9 @@ def train(device, net, dataloader, val_loader, args, logger, experiment):
                 trainer.state.epoch,
                 step=trainer.state.iteration,
             )
-
-    handler = ModelCheckpoint(args.model_dir, '{}_{}_{}'.format(args.model, args.premodel, args.attribute),
+    model_name = '{}_{}_{}'.format(args.model, args.premodel, args.attribute)
+    if args.tag: model_name += f'_{args.tag}'
+    handler = ModelCheckpoint(args.model_dir, model_name,
                                 n_saved=1,
                                 create_dir=True,
                                 save_as_state_dict=True,
