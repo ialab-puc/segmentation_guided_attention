@@ -40,8 +40,7 @@ class SegRank(nn.Module):
 
         sample = torch.randn([3,self.image_h,self.image_w]).unsqueeze(0)
         self.seg_dims = self.seg_net(sample)[0].size() # for layer size definition
-        self.fc_seg = nn.Linear(NUM_CLASSES,1)
-        self.fc_1 = nn.Linear(self.seg_dims[2]*self.seg_dims[3], 1000)
+        self.fc_1 = nn.Linear(self.seg_dims[2]*self.seg_dims[3]*NUM_CLASSES, 1000)
         self.bn_1 = nn.BatchNorm1d(1000)
         self.fc_2 = nn.Linear(1000,500)
         self.bn_2 = nn.BatchNorm1d(500)
@@ -55,8 +54,7 @@ class SegRank(nn.Module):
         batch_size = batch.size()[0]
         seg_output =  self.seg_net(batch)[0]
         seg_output = seg_output.permute([0,2,3,1])
-        x = self.fc_seg(seg_output)
-        x = x.view(batch_size, self.seg_dims[2]*self.seg_dims[3])
+        x = seg_output.contiguous().view(batch_size, self.seg_dims[2]*self.seg_dims[3]*NUM_CLASSES)
         x = self.fc_1(x)
         x = self.relu(x)
         x = self.bn_1(x)
