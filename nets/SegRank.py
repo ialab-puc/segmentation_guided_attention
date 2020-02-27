@@ -40,12 +40,9 @@ class SegRank(nn.Module):
 
         sample = torch.randn([3,self.image_h,self.image_w]).unsqueeze(0)
         self.seg_dims = self.seg_net(sample)[0].size() # for layer size definition
-        self.fc_1 = nn.Linear(self.seg_dims[2]*self.seg_dims[3]*NUM_CLASSES, 1000)
-        self.bn_1 = nn.BatchNorm1d(1000)
-        self.fc_2 = nn.Linear(1000,500)
-        self.bn_2 = nn.BatchNorm1d(500)
-        self.relu = nn.ReLU()
-        self.output = nn.Linear(500, 1)
+        self.transformer_1 = nn.MultiheadAttention(NUM_CLASSES, NUM_CLASSES)
+        self.transformer_2 = nn.MultiheadAttention(NUM_CLASSES, NUM_CLASSES)
+        self.output = nn.Linear(self.seg_dims[2]*self.seg_dims[3]*NUM_CLASSES, 1)
 
     def forward(self, left_batch, right_batch):
         return self.single_forward(left_batch), self.single_forward(right_batch)
@@ -53,14 +50,11 @@ class SegRank(nn.Module):
     def single_forward(self, batch):
         batch_size = batch.size()[0]
         seg_output =  self.seg_net(batch)[0]
-        seg_output = seg_output.permute([0,2,3,1])
-        x = seg_output.contiguous().view(batch_size, self.seg_dims[2]*self.seg_dims[3]*NUM_CLASSES)
-        x = self.fc_1(x)
-        x = self.relu(x)
-        x = self.bn_1(x)
-        x = self.fc_2(x)
-        x = self.relu(x)
-        x = self.bn_2(x)
+        seg_output = seg_output.permute([2,3,0,1])
+        x = seg_output.contiguous().view(self.seg_dims[2]*self.seg_dims[3],batch_size, NUM_CLASSES)
+        x, attn_1 = self.transformer_1(x, x, x)
+        x, attn_2 = self.transformer_2(x, x, x)
+        x = x.permute([1,0,2]).contiguous().view(batch_size,self.seg_dims[2]*self.seg_dims[3]*NUM_CLASSES)
         x = self.output(x)
         return x
 
