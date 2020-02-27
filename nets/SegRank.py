@@ -40,8 +40,8 @@ class SegRank(nn.Module):
 
         sample = torch.randn([3,self.image_h,self.image_w]).unsqueeze(0)
         self.seg_dims = self.seg_net(sample)[0].size() # for layer size definition
-        self.transformer_1 = nn.MultiheadAttention(NUM_CLASSES, NUM_CLASSES)
-        self.transformer_2 = nn.MultiheadAttention(NUM_CLASSES, NUM_CLASSES)
+        self.transformer_1 = nn.MultiheadAttention(NUM_CLASSES, NUM_CLASSES) #FIXME: this is probably wrong
+        self.transformer_2 = nn.MultiheadAttention(NUM_CLASSES, NUM_CLASSES)  # TODO: CHANGE TO ADAM IWTH DECAY
         self.output = nn.Linear(self.seg_dims[2]*self.seg_dims[3]*NUM_CLASSES, 1)
 
     def forward(self, left_batch, right_batch):
