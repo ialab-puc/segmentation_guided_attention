@@ -38,9 +38,13 @@ class SegRank(nn.Module):
         self.interp = lambda x: nn.functional.interpolate(x,size=image_size, mode='bilinear', align_corners=True)
         self.fc_seg = nn.Linear(NUM_CLASSES,1)
         self.pool = nn.AvgPool2d(kernel_size=4, stride=4)
+        self.bn_conv = nn.BatchNorm1d(self.image_h*self.image_w//4)
         self.fc_1 = nn.Linear(self.image_h*self.image_w//4, 1000)
+        self.bn_1 = nn.BatchNorm1d(1000)
+        self.fc_2 = nn.Linear(1000,500)
+        self.bn_2 = nn.BatchNorm1d(500)
         self.relu = nn.ReLU()
-        self.output = nn.Linear(1000, 1)
+        self.output = nn.Linear(500, 1)
 
     def forward(self, left_batch, right_batch):
         return self.single_forward(left_batch), self.single_forward(right_batch)
@@ -51,8 +55,13 @@ class SegRank(nn.Module):
         seg_output = self.interp(seg_output).permute([0,2,3,1])
         x = self.fc_seg(seg_output)
         x = self.pool(x).view(batch_size, self.image_h*self.image_w//4)
+        x = self.bn_conv(x)
         x = self.fc_1(x)
         x = self.relu(x)
+        x = self.bn_1(x)
+        x = self.fc_2(x)
+        x = self.relu(x)
+        x = self.bn_2(x)
         x = self.output(x)
         return x
 
