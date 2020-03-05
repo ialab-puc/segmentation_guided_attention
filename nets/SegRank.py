@@ -27,20 +27,20 @@ warnings.filterwarnings("ignore")
 device = torch.device("cuda:{}".format('0') if torch.cuda.is_available() else "cpu")
 
 class SegRank(nn.Module):
-    def __init__(self,image_size=(340,480), restore=RESTORE_FROM, n_heads=2):
+    def __init__(self,image_size=(340,480), restore=RESTORE_FROM, n_layers=4):
         super(SegRank, self).__init__()
         self.image_h, self.image_w = image_size
         self.seg_net = Seg_Model(num_classes=NUM_CLASSES)
         self.seg_net.eval() # FIXME: code does not run without this
-        self.n_heads = n_heads
+        self.n_layers = n_layers
         if restore is not None: self.seg_net.load_state_dict(torch.load(restore, map_location=device))
 
         for param in self.seg_net.parameters():  # freeze segnet params
             param.requires_grad = False
 
         sample = torch.randn([3,self.image_h,self.image_w]).unsqueeze(0)
-        self.seg_dims = self.seg_net(sample)[0].size() # for layer size definition
-        self.attentions = nn.ModuleList([nn.MultiheadAttention(NUM_CLASSES, 1) for _ in range(self.n_heads)]) # TODO: CHANGE TO ADAM IWTH DECAY
+        self.seg_dims = self.seg_net(sample)[0].size() # for layer size definitionlayers
+        self.attentions = nn.ModuleList([nn.MultiheadAttention(NUM_CLASSES, NUM_CLASSES) for _ in range(self.n_layers)])
         self.output = nn.Linear(self.seg_dims[2]*self.seg_dims[3]*NUM_CLASSES, 1)
 
     def forward(self, left_batch, right_batch):
