@@ -93,7 +93,7 @@ if __name__ == '__main__':
         from train_scripts.rcnn import train
     elif args.model == "segrank":
         from nets.SegRank import SegRank as Net
-        from train_scripts.rcnn import train
+        from train_scripts.SegRank import train
         import torch.distributed as dist
         dist.init_process_group('gloo', init_method='file:///tmp/tmpfile', rank=0, world_size=1)
     else:

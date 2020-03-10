@@ -9,7 +9,6 @@ import os
 from utils.ranking import compute_ranking_loss, compute_ranking_accuracy
 from utils.log import console_log,comet_log
 
-
 # others
 sys.path.append('segmentation')
 from segmentation.networks.pspnet import Seg_Model
@@ -27,7 +26,7 @@ warnings.filterwarnings("ignore")
 device = torch.device("cuda:{}".format('0') if torch.cuda.is_available() else "cpu")
 
 class SegRank(nn.Module):
-    def __init__(self,image_size=(340,480), restore=RESTORE_FROM, n_layers=4):
+    def __init__(self,image_size=(340,480), restore=RESTORE_FROM, n_layers=2):
         super(SegRank, self).__init__()
         self.image_h, self.image_w = image_size
         self.seg_net = Seg_Model(num_classes=NUM_CLASSES)
@@ -44,18 +43,27 @@ class SegRank(nn.Module):
         self.output = nn.Linear(self.seg_dims[2]*self.seg_dims[3]*NUM_CLASSES, 1)
 
     def forward(self, left_batch, right_batch):
-        return self.single_forward(left_batch), self.single_forward(right_batch)
+        return {
+            'left': self.single_forward(left_batch),
+            'right': self.single_forward(right_batch)
+        }
 
     def single_forward(self, batch):
         batch_size = batch.size()[0]
         seg_output =  self.seg_net(batch)[0]
-        seg_output = seg_output.permute([2,3,0,1])
-        x = seg_output.contiguous().view(self.seg_dims[2]*self.seg_dims[3],batch_size, NUM_CLASSES)
+        seg_output_permuted = seg_output.permute([2,3,0,1])
+        x = seg_output_permuted.contiguous().view(self.seg_dims[2]*self.seg_dims[3],batch_size, NUM_CLASSES)
+        attn_list = []
         for attention in self.attentions:
-            x, attn_1 = attention(x, x, x)
+            x, attn_weights = attention(x, x, x) #attn is size nxn , first row says importance of each pixel on calculating first pixel.
+            attn_list.append(attn_weights)
         x = x.permute([1,0,2]).contiguous().view(batch_size,self.seg_dims[2]*self.seg_dims[3]*NUM_CLASSES)
         x = self.output(x)
-        return x
+        return {
+            'output': x,
+            'segmentation': seg_output,
+            'attention': attn_list
+        }
 
     def partial_eval(self):
         self.seg_net.eval()
