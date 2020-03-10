@@ -38,6 +38,7 @@ def arg_parse():
     parser.add_argument('--pbar','--pb', help="1 to add pbars else 0", default=0, type=bool)
     parser.add_argument('--equal','--eq', help="1 to use ties on data else 0", default=0, type=bool)
     parser.add_argument('--comet','--cm', help="1 to use comet else 0", default=0, type=bool)
+    parser.add_argument('--tag','--t', help="extra tag for comet and model name", default='', type=str)
     return parser
 
 
@@ -49,7 +50,7 @@ if __name__ == '__main__':
         os.mkdir('logs')
     logging.basicConfig(format='%(message)s',filename=f'logs/{args.attribute}-{date.today().strftime("%d-%m-%Y")}.log')
     logger = logging.getLogger('timer')
-    logger.setLevel(logging.INFO) #set the minimum level of message logging
+    logger.setLevel(logging.WARNING) #set the minimum level of message logging
 
     train=PlacePulseDataset(
         f'{args.csv}/{args.attribute}/train.csv',
@@ -75,9 +76,9 @@ if __name__ == '__main__':
         logger=logger
         )
     dataloader = DataLoader(train, batch_size=args.batch_size,
-                            shuffle=True, num_workers=args.num_workers)
+                            shuffle=True, num_workers=args.num_workers, drop_last=True)
     val_loader = DataLoader(val, batch_size=args.batch_size,
-                            shuffle=True, num_workers=args.num_workers)
+                            shuffle=True, num_workers=args.num_workers, drop_last=True)
 
     if args.cuda:
         device = torch.device("cuda:{}".format(args.cuda_id) if torch.cuda.is_available() else "cpu")
@@ -92,7 +93,7 @@ if __name__ == '__main__':
         from train_scripts.rcnn import train
     elif args.model == "segrank":
         from nets.SegRank import SegRank as Net
-        from train_scripts.rcnn import train
+        from train_scripts.SegRank import train
         import torch.distributed as dist
         dist.init_process_group('gloo', init_method='file:///tmp/tmpfile', rank=0, world_size=1)
     else:
@@ -106,7 +107,7 @@ if __name__ == '__main__':
         'resnet':models.resnet50
     }
 
-    net = Net(models[args.premodel], finetune=args.finetune) if args.model != 'segrank' else Net()
+    net = Net(models[args.premodel], finetune=args.finetune) if args.model != 'segrank' else Net(image_size=(244,244))
     if args.resume:
         net.load_state_dict(torch.load(os.path.join(args.model_dir,'{}_{}_{}_model_{}.pth'.format(
             args.model,
@@ -121,7 +122,9 @@ if __name__ == '__main__':
                             auto_param_logging=False,
                             auto_metric_logging=False,
                             disabled=(not args.comet))
-    experiment.add_tags([args.premodel, args.attribute, args.model])
+    tags = [args.premodel, args.attribute, args.model]
+    if args.tag: tags.append(args.tag)
+    experiment.add_tags(tags)
     experiment.log_parameters(
         {
             "batch_size": args.batch_size,

@@ -46,7 +46,7 @@ def train(device, net, dataloader, val_loader, args, logger, experiment):
         optimizer.step()
         end = timer()
         logger.info(f'BACKWARD,{end-start:.4f}')
-
+        scheduler.step()
         return  { 'loss':loss.item(),
                 'rank_acc': rank_acc
                 }
@@ -71,9 +71,9 @@ def train(device, net, dataloader, val_loader, args, logger, experiment):
         print("using new loss")
     else:
         rank_crit = nn.MarginRankingLoss(reduction='mean', margin=1)
-    optimizer = optim.SGD(net.parameters(), lr=args.lr, weight_decay=args.wd, momentum=0.9)
-    #optimizer = RAdam(net.parameters(), lr=args.lr, weight_decay=args.wd)
-
+    #optimizer = optim.SGD(net.parameters(), lr=args.lr, weight_decay=args.wd, momentum=0.9)
+    optimizer = optim.Adam(net.parameters(), lr=args.lr, weight_decay=args.wd, betas=(0.9, 0.98), eps=1e-09)
+    scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=100, gamma=0.995, last_epoch=-1)
     trainer = Engine(update)
     evaluator = Engine(inference)
     RunningAverage(output_transform=lambda x: x['loss']).attach(trainer, 'loss')
@@ -115,7 +115,8 @@ def train(device, net, dataloader, val_loader, args, logger, experiment):
         if trainer.state.iteration %100 == 0:
             metrics = {
                     'train_rank_accuracy':trainer.state.metrics['rank_acc'],
-                    'train_loss':trainer.state.metrics['loss']
+                    'train_loss':trainer.state.metrics['loss'],
+                    'lr': scheduler.get_lr()
                 }
             comet_log(
                 metrics,
@@ -129,8 +130,9 @@ def train(device, net, dataloader, val_loader, args, logger, experiment):
                 trainer.state.epoch,
                 step=trainer.state.iteration,
             )
-
-    handler = ModelCheckpoint(args.model_dir, '{}_{}_{}'.format(args.model, args.premodel, args.attribute),
+    model_name = '{}_{}_{}'.format(args.model, args.premodel, args.attribute)
+    if args.tag: model_name += f'_{args.tag}'
+    handler = ModelCheckpoint(args.model_dir, model_name,
                                 n_saved=1,
                                 create_dir=True,
                                 save_as_state_dict=True,
