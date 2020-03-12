@@ -15,3 +15,6 @@ def console_log(train_metrics,val_metrics, epoch, step=None):
 
 def comet_log(metrics, experiment, epoch=None, step=None):
     experiment.log_metrics(metrics, epoch=epoch, step=step)
+
+def comet_image_log(image,image_name,experiment,epoch=None):
+    experiment.log_image(image, name=image_name)

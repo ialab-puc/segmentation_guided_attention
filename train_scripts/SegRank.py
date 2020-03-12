@@ -8,7 +8,8 @@ from ignite.metrics import Accuracy,Loss, RunningAverage
 from ignite.contrib.handlers import ProgressBar
 from ignite.handlers import ModelCheckpoint
 from utils.ranking import compute_ranking_loss, compute_ranking_accuracy
-from utils.log import console_log, comet_log
+from utils.log import console_log, comet_log, comet_image_log
+from utils.image_gen import segmentation_to_image, get_palette
 from loss import RankingLoss
 
 def train(device, net, dataloader, val_loader, args, logger, experiment):
@@ -27,6 +28,11 @@ def train(device, net, dataloader, val_loader, args, logger, experiment):
 
         #compute ranking accuracy
         rank_acc = compute_ranking_accuracy(output_rank_left, output_rank_right, label)
+
+        if trainer.state.iteration %1000 == 0:
+            segmentation = forward_dict['left']['segmentation'][0]
+            seg_img = segmentation_to_image(segmentation,palette)
+            comet_image_log(seg_img,f'segmentation_{trainer.state.iteration}',experiment, epoch=trainer.state.epoch)
 
         # backward step
         loss.backward()
@@ -62,6 +68,8 @@ def train(device, net, dataloader, val_loader, args, logger, experiment):
 
     trainer = Engine(update)
     evaluator = Engine(inference)
+
+    palette = get_palette(19)
     RunningAverage(output_transform=lambda x: x['loss']).attach(trainer, 'loss')
     RunningAverage(output_transform=lambda x: x['rank_acc']).attach(trainer, 'rank_acc')
 
