@@ -8,8 +8,7 @@ class SubstractMean:
         self.mean = mean
 
     def __call__(self, image_arr):
-        image_arr -= self.mean
-        return image_arr
+        return image_arr - self.mean
 
 class ToArray:
 

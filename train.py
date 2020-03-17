@@ -68,6 +68,7 @@ if __name__ == '__main__':
                 AdaptTransform(transforms.Resize((244,244))),
                 AdaptTransform(transforms.ToTensor())
                 ])
+        return_images = False
     else:
         IMG_MEAN = np.array((104.00698793,116.66876762,122.67891434), dtype=np.float32)
         train_transforms = transforms.Compose([
@@ -83,19 +84,22 @@ if __name__ == '__main__':
                 AdaptTransform(seg_transforms.Resize((244,244))),
                 AdaptTransform(seg_transforms.ToTorchDims())
                 ])
+        return_images = True
 
     train=PlacePulseDataset(
         f'{args.csv}/{args.attribute}/train.csv',
         args.dataset,
         transform=train_transforms,
         logger=logger,
-        equal=args.equal
+        equal=args.equal,
+        return_images=return_images
         )
     val=PlacePulseDataset(
         f'{args.csv}/{args.attribute}/val.csv',
         args.dataset,
         transform=val_transforms,
-        logger=logger
+        logger=logger,
+        return_images=return_images
         )
     dataloader = DataLoader(train, batch_size=args.batch_size,
                             shuffle=True, num_workers=args.num_workers, drop_last=True)
