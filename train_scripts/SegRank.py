@@ -7,14 +7,16 @@ from ignite.engine import Engine, Events
 from ignite.metrics import Accuracy,Loss, RunningAverage
 from ignite.contrib.handlers import ProgressBar
 from ignite.handlers import ModelCheckpoint
+from PIL import Image as PILImage
 from utils.ranking import compute_ranking_loss, compute_ranking_accuracy
 from utils.log import console_log, comet_log, comet_image_log
-from utils.image_gen import segmentation_to_image, get_palette
+from utils.image_gen import segmentation_to_image, get_palette, attention_to_images
 from loss import RankingLoss
+
 
 def train(device, net, dataloader, val_loader, args, logger, experiment):
     def update(engine, data):
-        input_left, input_right, label = data['left_image'], data['right_image'], data['winner']
+        input_left, input_right, label, left_original = data['left_image'], data['right_image'], data['winner'], data['left_image_original']
         input_left, input_right, label = input_left.to(device), input_right.to(device), label.to(device)
         # zero the parameter gradients
         optimizer.zero_grad()
@@ -29,28 +31,35 @@ def train(device, net, dataloader, val_loader, args, logger, experiment):
         #compute ranking accuracy
         rank_acc = compute_ranking_accuracy(output_rank_left, output_rank_right, label)
 
-        if trainer.state.iteration %1000 == 0:
-            segmentation = forward_dict['left']['segmentation'][0]
-            seg_img = segmentation_to_image(segmentation,palette)
-            comet_image_log(seg_img,f'segmentation_{trainer.state.iteration}',experiment, epoch=trainer.state.epoch)
-
         # backward step
         loss.backward()
         optimizer.step()
         scheduler.step()
+
         return  { 'loss':loss.item(),
                 'rank_acc': rank_acc
                 }
 
     def inference(engine,data):
         with torch.no_grad():
-            input_left, input_right, label = data['left_image'], data['right_image'], data['winner']
+            input_left, input_right, label, left_original = data['left_image'], data['right_image'], data['winner'], data['left_image_original']
             input_left, input_right, label = input_left.to(device), input_right.to(device), label.to(device)
             label = label.float()
             forward_dict = net(input_left,input_right)
             output_rank_left, output_rank_right =  forward_dict['left']['output'], forward_dict['right']['output']
             loss = compute_ranking_loss(output_rank_left, output_rank_right, label, rank_crit)
             rank_acc = compute_ranking_accuracy(output_rank_left, output_rank_right, label)
+
+            if evaluator.state.iteration == 1:
+                segmentation = forward_dict['left']['segmentation'][0]
+                original = left_original[0]
+                attention_map = forward_dict['left']['attention'][0][0]
+                seg_img = segmentation_to_image(segmentation,palette)
+                attentions = attention_to_images(original, attention_map)
+                comet_image_log(seg_img,f'segmentation_{trainer.state.epoch}',experiment, epoch=trainer.state.epoch)
+                comet_image_log(original,f'original_{trainer.state.epoch}',experiment, epoch=trainer.state.epoch)
+                for i,image in enumerate(attentions):
+                    comet_image_log(image,f'attention_head_{i}_{trainer.state.epoch}',experiment, epoch=trainer.state.epoch)
             return  { 'loss':loss.item(),
                 'rank_acc': rank_acc
                 }

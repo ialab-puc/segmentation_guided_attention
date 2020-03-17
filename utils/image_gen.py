@@ -1,17 +1,36 @@
 from PIL import Image as PILImage
 import numpy as np
 from torch import nn
+import cv2
 
 def segmentation_to_image(segmentation, palette, output_size=(244, 244)):
     interp = nn.Upsample(size=output_size, mode='bilinear', align_corners=True)
-    print(segmentation.unsqueeze(0).size())
     segmentation = interp(segmentation.unsqueeze(0)).cpu().numpy().transpose(0,2,3,1)
-    print(segmentation[0,1,2,:])
     seg_pred = np.asarray(np.argmax(segmentation, axis=3), dtype=np.uint8)
-    print(seg_pred[0])
     output_im = PILImage.fromarray(seg_pred[0])
     output_im.putpalette(palette)
     return output_im
+
+def attention_to_images(image,attention_map,output_size=(244,244)):
+    cvImage = cv2.cvtColor(image.cpu().numpy(), cv2.COLOR_RGB2BGR)
+    cvImage = cv2.cvtColor(cvImage, cv2.COLOR_BGR2GRAY)
+    cvImage = cv2.cvtColor(cvImage, cv2.COLOR_GRAY2BGR) #we neeed a 3 dimensional gray image
+    cvImage = cv2.resize(cvImage, output_size)
+    interp = nn.Upsample(size=output_size, mode='bilinear', align_corners=True)
+    attention_map = attention_map.mean(dim=2, keepdim=True)
+    attention_size = attention_map.size()
+    dim = int(attention_size[1]**(0.5))
+    attention_map = interp((attention_map.view((attention_size[0],1,dim,dim))))
+    attention_map = attention_map.view((attention_size[0],output_size[0],output_size[0])).cpu().detach().numpy()
+    images = []
+    for single_map in attention_map:
+        heatmap_img = None
+        heatmap_img = cv2.normalize(single_map, heatmap_img, alpha=0, beta=255, norm_type=cv2.NORM_MINMAX, dtype=cv2.CV_8U)
+        heatmap_img = cv2.applyColorMap(heatmap_img, cv2.COLORMAP_JET)
+        result = cv2.addWeighted(heatmap_img, 0.5, cvImage, 0.5, 0)
+        images.append(result)
+    return images
+
 
 def get_palette(num_cls):
     """ Returns the color map for visualizing the segmentation mask.
