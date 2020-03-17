@@ -4,11 +4,8 @@ from torch import nn
 
 def segmentation_to_image(segmentation, palette, output_size=(244, 244)):
     interp = nn.Upsample(size=output_size, mode='bilinear', align_corners=True)
-    print(segmentation.unsqueeze(0).size())
     segmentation = interp(segmentation.unsqueeze(0)).cpu().numpy().transpose(0,2,3,1)
-    print(segmentation[0,1,2,:])
     seg_pred = np.asarray(np.argmax(segmentation, axis=3), dtype=np.uint8)
-    print(seg_pred[0])
     output_im = PILImage.fromarray(seg_pred[0])
     output_im.putpalette(palette)
     return output_im

@@ -8,8 +8,10 @@ import torch
 from torchvision import transforms
 from torch.utils.data import random_split, DataLoader
 import torchvision.models as models
+import numpy as np
 
 from data import PlacePulseDataset, AdaptTransform
+import seg_transforms
 import logging
 from datetime import date
 import os
@@ -52,27 +54,47 @@ if __name__ == '__main__':
     logger = logging.getLogger('timer')
     logger.setLevel(logging.WARNING) #set the minimum level of message logging
 
+    if args.model != "segrank":
+        train_transforms = transforms.Compose([
+                AdaptTransform(transforms.ToPILImage()),
+                # AdaptTransform(transforms.Resize((244,244))),
+                AdaptTransform(transforms.RandomResizedCrop(244)),
+                AdaptTransform(transforms.RandomHorizontalFlip(p=0.3)),
+                AdaptTransform(transforms.ToTensor())
+                ])
+
+        val_transforms = transforms.Compose([
+                AdaptTransform(transforms.ToPILImage()),
+                AdaptTransform(transforms.Resize((244,244))),
+                AdaptTransform(transforms.ToTensor())
+                ])
+    else:
+        IMG_MEAN = np.array((104.00698793,116.66876762,122.67891434), dtype=np.float32)
+        train_transforms = transforms.Compose([
+                AdaptTransform(seg_transforms.ToArray()),
+                AdaptTransform(seg_transforms.SubstractMean(IMG_MEAN)),
+                AdaptTransform(seg_transforms.Resize((244,244))),
+                AdaptTransform(seg_transforms.ToTorchDims())
+                ])
+
+        val_transforms = transforms.Compose([
+                AdaptTransform(seg_transforms.ToArray()),
+                AdaptTransform(seg_transforms.SubstractMean(IMG_MEAN)),
+                AdaptTransform(seg_transforms.Resize((244,244))),
+                AdaptTransform(seg_transforms.ToTorchDims())
+                ])
+
     train=PlacePulseDataset(
         f'{args.csv}/{args.attribute}/train.csv',
         args.dataset,
-        transform=transforms.Compose([
-            AdaptTransform(transforms.ToPILImage()),
-            # AdaptTransform(transforms.Resize((244,244))),
-            AdaptTransform(transforms.RandomResizedCrop(244)),
-            AdaptTransform(transforms.RandomHorizontalFlip(p=0.3)),
-            AdaptTransform(transforms.ToTensor())
-            ]),
+        transform=train_transforms,
         logger=logger,
         equal=args.equal
         )
     val=PlacePulseDataset(
         f'{args.csv}/{args.attribute}/val.csv',
         args.dataset,
-        transform=transforms.Compose([
-            AdaptTransform(transforms.ToPILImage()),
-            AdaptTransform(transforms.Resize((244,244))),
-            AdaptTransform(transforms.ToTensor())
-            ]),
+        transform=val_transforms,
         logger=logger
         )
     dataloader = DataLoader(train, batch_size=args.batch_size,
