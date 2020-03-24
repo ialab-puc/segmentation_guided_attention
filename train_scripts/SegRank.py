@@ -9,8 +9,8 @@ from ignite.contrib.handlers import ProgressBar
 from ignite.handlers import ModelCheckpoint
 from PIL import Image as PILImage
 from utils.ranking import compute_ranking_loss, compute_ranking_accuracy
-from utils.log import console_log, comet_log, comet_image_log
-from utils.image_gen import segmentation_to_image, get_palette, attention_to_images
+from utils.log import console_log, comet_log, comet_image_log, image_log
+from utils.image_gen import get_palette
 from loss import RankingLoss
 
 
@@ -36,6 +36,12 @@ def train(device, net, dataloader, val_loader, args, logger, experiment):
         optimizer.step()
         scheduler.step()
 
+        if trainer.state.iteration == 1:
+            segmentation = forward_dict['left']['segmentation'][0]
+            original = left_original[0]
+            attention_map = forward_dict['left']['attention'][0][0]
+            image_log(segmentation,original,attention_map,palette,experiment,0)
+
         return  { 'loss':loss.item(),
                 'rank_acc': rank_acc
                 }
@@ -54,12 +60,8 @@ def train(device, net, dataloader, val_loader, args, logger, experiment):
                 segmentation = forward_dict['left']['segmentation'][0]
                 original = left_original[0]
                 attention_map = forward_dict['left']['attention'][0][0]
-                seg_img = segmentation_to_image(segmentation,palette)
-                attentions = attention_to_images(original, attention_map)
-                comet_image_log(seg_img,f'segmentation_{trainer.state.epoch}',experiment, epoch=trainer.state.epoch)
-                comet_image_log(original,f'original_{trainer.state.epoch}',experiment, epoch=trainer.state.epoch)
-                for i,image in enumerate(attentions):
-                    comet_image_log(image,f'attention_head_{i}_{trainer.state.epoch}',experiment, epoch=trainer.state.epoch)
+                image_log(segmentation,original,attention_map,palette,experiment,trainer.state.epoch)
+
             return  { 'loss':loss.item(),
                 'rank_acc': rank_acc
                 }
