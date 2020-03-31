@@ -42,7 +42,7 @@ class PlacePulseDataset(Dataset):
             sample['left_image_original'] = left_image
             sample['right_image_original'] = right_image
         end = timer()
-        self.logger.info(f'DATALOADER,{end-start:.4f}')
+        if self.logger: self.logger.info(f'DATALOADER,{end-start:.4f}')
         return sample
 
 class AdaptTransform():

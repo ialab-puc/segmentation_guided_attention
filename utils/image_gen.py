@@ -16,12 +16,13 @@ def attention_to_images(image,attention_map,output_size=(244,244)):
     cvImage = cv2.cvtColor(cvImage, cv2.COLOR_BGR2GRAY)
     cvImage = cv2.cvtColor(cvImage, cv2.COLOR_GRAY2BGR) #we neeed a 3 dimensional gray image
     cvImage = cv2.resize(cvImage, output_size)
+    attention_map = attention_map[:,:,0:960]
     interp = nn.Upsample(size=output_size, mode='bilinear', align_corners=True)
     attention_map = attention_map.mean(dim=2, keepdim=True)
     attention_size = attention_map.size()
     dim = int(attention_size[1]**(0.5))
-    attention_map = interp((attention_map.view((attention_size[0],1,dim,dim))))
-    attention_map = attention_map.view((attention_size[0],output_size[0],output_size[0])).cpu().detach().numpy()
+    attention_map = attention_map.view((attention_size[0],1,dim,dim))
+    attention_map = interp(attention_map).squeeze(1).cpu().detach().numpy()
     images = []
     for single_map in attention_map:
         heatmap_img = None
