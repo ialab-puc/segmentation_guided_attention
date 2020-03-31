@@ -41,6 +41,7 @@ def arg_parse():
     parser.add_argument('--equal','--eq', help="1 to use ties on data else 0", default=0, type=bool)
     parser.add_argument('--comet','--cm', help="1 to use comet else 0", default=0, type=bool)
     parser.add_argument('--tag','--t', help="extra tag for comet and model name", default='', type=str)
+    parser.add_argument('--attention_normalize','--at', help="how to normalize attention images for segrank.", default="local", type=str, choices=['local','global'])
     return parser
 
 
