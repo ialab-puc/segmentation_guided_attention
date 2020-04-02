@@ -36,11 +36,11 @@ def train(device, net, dataloader, val_loader, args, logger, experiment):
         optimizer.step()
         scheduler.step()
 
-        if trainer.state.iteration == 1:
-            segmentation = forward_dict['left']['segmentation'][0]
-            original = left_original[0]
-            attention_map = forward_dict['left']['attention'][0][0]
-            image_log(segmentation,original,attention_map,palette,experiment,0, normalize=args.attention_normalize)
+        # if trainer.state.iteration == 1:
+        #     segmentation = forward_dict['left']['segmentation'][0]
+        #     original = left_original[0]
+        #     attention_map = forward_dict['left']['attention'][0][0]
+        #     image_log(segmentation,original,attention_map,palette,experiment,0, normalize=args.attention_normalize)
 
         return  { 'loss':loss.item(),
                 'rank_acc': rank_acc
@@ -56,11 +56,11 @@ def train(device, net, dataloader, val_loader, args, logger, experiment):
             loss = compute_ranking_loss(output_rank_left, output_rank_right, label, rank_crit)
             rank_acc = compute_ranking_accuracy(output_rank_left, output_rank_right, label)
 
-            if evaluator.state.iteration == 1:
-                segmentation = forward_dict['left']['segmentation'][0]
-                original = left_original[0]
-                attention_map = forward_dict['left']['attention'][0][0]
-                image_log(segmentation,original,attention_map,palette,experiment,trainer.state.epoch, normalize=args.attention_normalize)
+            # if evaluator.state.iteration == 1:
+            #     segmentation = forward_dict['left']['segmentation'][0]
+            #     original = left_original[0]
+            #     attention_map = forward_dict['left']['attention'][0][0]
+            #     image_log(segmentation,original,attention_map,palette,experiment,trainer.state.epoch, normalize=args.attention_normalize)
 
             return  { 'loss':loss.item(),
                 'rank_acc': rank_acc
