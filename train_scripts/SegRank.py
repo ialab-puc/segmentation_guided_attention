@@ -60,7 +60,7 @@ def train(device, net, dataloader, val_loader, args, logger, experiment):
                 segmentation = forward_dict['left']['segmentation'][0]
                 original = left_original[0]
                 attention_map = forward_dict['left']['attention'][0][0]
-                image_log(segmentation,original,attention_map,palette,experiment,trainer.state.epoch)
+                image_log(segmentation,original,attention_map,palette,experiment,trainer.state.epoch, normalize=args.attention_normalize)
 
             return  { 'loss':loss.item(),
                 'rank_acc': rank_acc
