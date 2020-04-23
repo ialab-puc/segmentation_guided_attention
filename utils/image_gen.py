@@ -32,6 +32,7 @@ def global_normalize(image,attention_map):
     for single_map in heatmap_img:
         single_img = cv2.applyColorMap(single_map, cv2.COLORMAP_JET)
         result = cv2.addWeighted(single_img, 0.5, image, 0.5, 0)
+        result = cv2.cvtColor(result,cv2.COLOR_BGR2RGB)
         images.append(result)
     return images
 
@@ -42,6 +43,7 @@ def local_normalize(image,attention_map):
         heatmap_img = cv2.normalize(single_map, heatmap_img, alpha=0, beta=255, norm_type=cv2.NORM_MINMAX, dtype=cv2.CV_8U)
         img = cv2.applyColorMap(heatmap_img, cv2.COLORMAP_JET)
         result = cv2.addWeighted(img, 0.5, image, 0.5, 0)
+        result = cv2.cvtColor(result,cv2.COLOR_BGR2RGB)
         images.append(result)
     return images
 
