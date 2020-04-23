@@ -31,6 +31,7 @@ class SegRank(nn.Module):
         self.image_h, self.image_w = image_size
         self.seg_net = Seg_Model(num_classes=NUM_CLASSES)
         self.seg_net.eval() # FIXME: code does not run without this
+        self.softmax = nn.Softmax(dim=1)
         self.n_layers = n_layers
         if restore is not None: self.seg_net.load_state_dict(torch.load(restore, map_location=device))
 
@@ -50,9 +51,9 @@ class SegRank(nn.Module):
 
     def single_forward(self, batch):
         batch_size = batch.size()[0]
-        seg_output =  self.seg_net(batch)[0]
+        seg_output =  self.softmax(self.seg_net(batch)[0])
         seg_output_permuted = seg_output.permute([2,3,0,1])
-        x = seg_output_permuted.contiguous().view(self.seg_dims[2]*self.seg_dims[3],batch_size, NUM_CLASSES)
+        x = seg_output_permuted.contiguous().view(self.seg_dims[2]*self.seg_dims[3],batch_size, NUM_CLASSES) #TODO: check this might be wrong
         attn_list = []
         for attention in self.attentions:
             x, attn_weights = attention(x, x, x) #attn is size nxn , first row says importance of each pixel on calculating first pixel.
