@@ -18,7 +18,7 @@ def attention_to_images(image,attention_map,output_size=(244,244), normalize='lo
     cvImage = cv2.resize(cvImage, output_size)
     attention_map = attention_map[:,:,0:960]
     interp = nn.Upsample(size=output_size, mode='bilinear', align_corners=True)
-    attention_map = attention_map.mean(dim=2, keepdim=True)
+    attention_map = attention_map.norm(dim=2, keepdim=True)
     attention_size = attention_map.size()
     dim = int(attention_size[1]**(0.5))
     attention_map = attention_map.view((attention_size[0],1,dim,dim))
