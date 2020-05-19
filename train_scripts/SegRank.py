@@ -8,11 +8,10 @@ from ignite.metrics import Accuracy,Loss, RunningAverage
 from ignite.contrib.handlers import ProgressBar
 from ignite.handlers import ModelCheckpoint
 from PIL import Image as PILImage
-from utils.ranking import compute_ranking_loss, compute_ranking_accuracy
+from utils.ranking import *
 from utils.log import console_log, comet_log, comet_image_log, image_log
 from utils.image_gen import get_palette
 from loss import RankingLoss
-
 
 def train(device, net, dataloader, val_loader, args, logger, experiment):
     def update(engine, data):
@@ -23,13 +22,15 @@ def train(device, net, dataloader, val_loader, args, logger, experiment):
         label = label.float()
 
         forward_dict = net(input_left,input_right)
+
         output_rank_left, output_rank_right =  forward_dict['left']['output'], forward_dict['right']['output']
 
-        #compute ranking loss
-        loss = compute_ranking_loss(output_rank_left, output_rank_right, label, rank_crit)
-
-        #compute ranking accuracy
-        rank_acc = compute_ranking_accuracy(output_rank_left, output_rank_right, label)
+        if args.attribute == 'all':
+            loss = compute_multiple_ranking_loss(output_rank_left, output_rank_right, label, rank_crit, data['attribute'])
+            rank_acc = compute_multiple_ranking_accuracy(output_rank_left, output_rank_right, label, data['attribute'])
+        else:
+            loss = compute_ranking_loss(output_rank_left, output_rank_right, label, rank_crit)
+            rank_acc = compute_ranking_accuracy(output_rank_left, output_rank_right, label)
 
         # backward step
         loss.backward()
