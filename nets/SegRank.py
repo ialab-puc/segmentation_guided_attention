@@ -26,12 +26,13 @@ warnings.filterwarnings("ignore")
 device = torch.device("cuda:{}".format('0') if torch.cuda.is_available() else "cpu")
 
 class SegRank(nn.Module):
-    def __init__(self,image_size=(340,480), restore=RESTORE_FROM, n_layers=2, n_heads=NUM_CLASSES):
+    def __init__(self,image_size=(340,480), restore=RESTORE_FROM, n_layers=2, n_heads=NUM_CLASSES, softmax=True):
         super(SegRank, self).__init__()
         self.image_h, self.image_w = image_size
         self.seg_net = Seg_Model(num_classes=NUM_CLASSES)
         self.seg_net.eval() # FIXME: code does not run without this
-        self.softmax = nn.Softmax(dim=1)
+        print(softmax)
+        self.softmax = nn.Softmax(dim=1) if softmax else None
         self.n_layers = n_layers
         self.n_heads = n_heads
         print(self.n_heads, self.n_layers)
@@ -53,7 +54,7 @@ class SegRank(nn.Module):
 
     def single_forward(self, batch):
         batch_size = batch.size()[0]
-        seg_output =  self.softmax(self.seg_net(batch)[0])
+        seg_output =  self.softmax(self.seg_net(batch)[0]) if self.softmax is not None else self.seg_net(batch)[0]
         seg_output_permuted = seg_output.permute([2,3,0,1])
         x = seg_output_permuted.contiguous().view(self.seg_dims[2]*self.seg_dims[3],batch_size, NUM_CLASSES)
         attn_list = []

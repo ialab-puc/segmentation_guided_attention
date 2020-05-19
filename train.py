@@ -21,13 +21,14 @@ import os
 #script args
 def arg_parse():
     parser = argparse.ArgumentParser(description='Training place pulse')
-    parser.add_argument('--cuda', help="1 to run with cuda else 0", default=1, type=bool)
+    parser.add_argument('--cuda', help="run with cuda", action='store_true')
     parser.add_argument('--csv', help="path to placepulse csv dirs", default="votes/", type=str)
     parser.add_argument('--dataset', help="dataset images directory path", default="placepulse/", type=str)
     parser.add_argument('--attribute', help="placepulse attribute to train on", default="wealthy", type=str,  choices=['wealthy','lively', 'depressing', 'safety','boring','beautiful'])
     parser.add_argument('--batch_size', help="batch size", default=32, type=int)
     parser.add_argument('--n_layers', help="number of attention layers for segrank", default=2, type=int)
     parser.add_argument('--n_heads', help="number of attention heads for segrank", default=1, type=int)
+    parser.add_argument('--softmax', help="use softmax on Pspnet", action='store_true')
     parser.add_argument('--lr', help="learning_rate", default=0.001, type=float)
     parser.add_argument('--resume','--r', help="resume training",action='store_true')
     parser.add_argument('--wd', help="weight decay regularization", default=0.0, type=float)
@@ -38,10 +39,10 @@ def arg_parse():
     parser.add_argument('--max_epochs', help="maximum training epochs", default=10, type=int)
     parser.add_argument('--cuda_id', help="gpu id", default=0, type=int)
     parser.add_argument('--premodel', help="premodel to use, alex or vgg or dense", default='alex', type=str, choices=['alex','vgg','dense','resnet'])
-    parser.add_argument('--finetune','--ft', help="1 to finetune premodel else 0", default=0, type=bool)
-    parser.add_argument('--pbar','--pb', help="1 to add pbars else 0", default=0, type=bool)
-    parser.add_argument('--equal','--eq', help="1 to use ties on data else 0", default=0, type=bool)
-    parser.add_argument('--comet','--cm', help="1 to use comet else 0", default=0, type=bool)
+    parser.add_argument('--finetune','--ft', help="finetune premodel", action='store_true')
+    parser.add_argument('--pbar','--pb', help="add pbars", action='store_true')
+    parser.add_argument('--equal','--eq', help="use ties on data", action='store_true')
+    parser.add_argument('--comet','--cm', help="use comet", action='store_true')
     parser.add_argument('--tag','--t', help="extra tag for comet and model name", default='', type=str)
     parser.add_argument('--attention_normalize','--at', help="how to normalize attention images for segrank.", default="local", type=str, choices=['local','global'])
     return parser
@@ -135,8 +136,15 @@ if __name__ == '__main__':
         'dense':models.densenet121,
         'resnet':models.resnet50
     }
-
-    net = Net(models[args.premodel], finetune=args.finetune) if args.model != 'segrank' else Net(image_size=(244,244), n_layers=args.n_layers, n_heads= args.n_heads)
+    if args.model != 'segrank':
+        net = Net(models[args.premodel], finetune=args.finetune)
+    else:
+        net = Net(
+            image_size=(244,244),
+            n_layers=args.n_layers,
+            n_heads=args.n_heads,
+            softmax = args.softmax
+            )
     if args.resume:
         net.load_state_dict(torch.load(os.path.join(args.model_dir,'{}_{}_{}_model_{}.pth'.format(
             args.model,
