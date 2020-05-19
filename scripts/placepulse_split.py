@@ -23,7 +23,7 @@ if __name__ == '__main__':
         if not attr in os.listdir(ROOT_PATH):
             os.mkdir(f'{ROOT_PATH}/{attr}')
         attr_split = data[data['category'] == attr] if attr != 'all' else data
-        train, val = train_test_split(attr_split, test_size=0.2, stratify=data['category'])
+        train, val = train_test_split(attr_split, test_size=0.2, stratify=attr_split['category'])
         train.to_csv(f'{ROOT_PATH}/{attr}/train.csv', header=True, index=False)
         val.to_csv(f'{ROOT_PATH}/{attr}/val.csv', header=True, index=False)
 
