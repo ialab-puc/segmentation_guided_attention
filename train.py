@@ -26,6 +26,8 @@ def arg_parse():
     parser.add_argument('--dataset', help="dataset images directory path", default="placepulse/", type=str)
     parser.add_argument('--attribute', help="placepulse attribute to train on", default="wealthy", type=str,  choices=['wealthy','lively', 'depressing', 'safety','boring','beautiful'])
     parser.add_argument('--batch_size', help="batch size", default=32, type=int)
+    parser.add_argument('--n_layers', help="number of attention layers for segrank", default=2, type=int)
+    parser.add_argument('--n_heads', help="number of attention heads for segrank", default=1, type=int)
     parser.add_argument('--lr', help="learning_rate", default=0.001, type=float)
     parser.add_argument('--resume','--r', help="resume training",action='store_true')
     parser.add_argument('--wd', help="weight decay regularization", default=0.0, type=float)
@@ -134,7 +136,7 @@ if __name__ == '__main__':
         'resnet':models.resnet50
     }
 
-    net = Net(models[args.premodel], finetune=args.finetune) if args.model != 'segrank' else Net(image_size=(244,244))
+    net = Net(models[args.premodel], finetune=args.finetune) if args.model != 'segrank' else Net(image_size=(244,244), n_layers=args.n_layers, n_heads= args.n_heads)
     if args.resume:
         net.load_state_dict(torch.load(os.path.join(args.model_dir,'{}_{}_{}_model_{}.pth'.format(
             args.model,
