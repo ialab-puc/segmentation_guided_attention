@@ -31,11 +31,9 @@ class SegRank(nn.Module):
         self.image_h, self.image_w = image_size
         self.seg_net = Seg_Model(num_classes=NUM_CLASSES)
         self.seg_net.eval() # FIXME: code does not run without this
-        print(softmax)
         self.softmax = nn.Softmax(dim=1) if softmax else None
         self.n_layers = n_layers
         self.n_heads = n_heads
-        print(self.n_heads, self.n_layers)
         if restore is not None: self.seg_net.load_state_dict(torch.load(restore, map_location=device))
 
         for param in self.seg_net.parameters():  # freeze segnet params
