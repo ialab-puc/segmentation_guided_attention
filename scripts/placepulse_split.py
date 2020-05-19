@@ -3,12 +3,14 @@ from sklearn.model_selection import train_test_split
 import os
 
 DATA_PATH = 'votes_clean.csv'
-ATTRIBUTES = ['wealthy',
+ATTRIBUTES = [
+    'wealthy',
     'depressing',
     'safety',
     'lively',
     'boring',
-    'beautiful'
+    'beautiful',
+    'all'
 ]
 ROOT_PATH = 'votes'
 
@@ -20,8 +22,8 @@ if __name__ == '__main__':
         print(attr)
         if not attr in os.listdir(ROOT_PATH):
             os.mkdir(f'{ROOT_PATH}/{attr}')
-        attr_split = data[data['category'] == attr]
-        train, val = train_test_split(attr_split, test_size=0.2)
+        attr_split = data[data['category'] == attr] if attr != 'all' else data
+        train, val = train_test_split(attr_split, test_size=0.2, stratify=data['category'])
         train.to_csv(f'{ROOT_PATH}/{attr}/train.csv', header=True, index=False)
         val.to_csv(f'{ROOT_PATH}/{attr}/val.csv', header=True, index=False)
 
