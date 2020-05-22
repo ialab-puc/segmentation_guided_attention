@@ -7,6 +7,17 @@ from torchvision import transforms
 
 from timeit import default_timer as timer
 
+
+ATTR_ID = {
+    'wealthy':0,
+    'safety':1,
+    'depressing':2,
+    'boring':3,
+    'lively':4,
+    'beautiful':5
+}
+
+
 ## Data loader class
 class PlacePulseDataset(Dataset):
 
@@ -35,7 +46,7 @@ class PlacePulseDataset(Dataset):
         right_image = io.imread(right_img_name)
         winner = self.label[self.placepulse_data.iloc[idx, 2]]
         cat = self.placepulse_data.iloc[idx, -1]
-        sample = {'left_image': left_image, 'right_image':right_image,'winner': winner}
+        sample = {'left_image': left_image, 'right_image':right_image,'winner': winner, 'attribute':ATTR_ID[self.placepulse_data.iloc[idx, -1]]}
         if self.transform:
             sample = self.transform(sample)
         if self.return_images:
@@ -54,4 +65,6 @@ class AdaptTransform():
 
         return {'left_image': self.transform(left_image),
                 'right_image': self.transform(right_image),
-                'winner': sample['winner']}
+                'winner': sample['winner'],
+                'attribute': sample['attribute']
+                }

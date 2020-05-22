@@ -16,9 +16,6 @@ class RankingLoss(nn.Module):
         rank_loss = torch.clamp(-y*(diff) + bin_y*self.margin, min=0)
         return torch.mean(rank_loss + tie_loss)
 
-
-
-
 if __name__ == '__main__':
     y = torch.Tensor([-1,0,1])
     x_left = torch.Tensor([-0.000000001,-3,-0.000000001])
