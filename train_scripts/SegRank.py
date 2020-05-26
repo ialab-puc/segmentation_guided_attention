@@ -52,11 +52,16 @@ def train(device, net, dataloader, val_loader, args, logger, experiment):
         with torch.no_grad():
             input_left, input_right, label, left_original = data['left_image'], data['right_image'], data['winner'], data['left_image_original']
             input_left, input_right, label = input_left.to(device), input_right.to(device), label.to(device)
+            attribute = data['attribute'].to(device)
             label = label.float()
             forward_dict = net(input_left,input_right)
             output_rank_left, output_rank_right =  forward_dict['left']['output'], forward_dict['right']['output']
-            loss = compute_ranking_loss(output_rank_left, output_rank_right, label, rank_crit)
-            rank_acc = compute_ranking_accuracy(output_rank_left, output_rank_right, label)
+            if args.attribute == 'all':
+                loss = compute_multiple_ranking_loss(output_rank_left, output_rank_right, label, rank_crit, attribute)
+                rank_acc = compute_multiple_ranking_accuracy(output_rank_left, output_rank_right, label, attribute)
+            else:
+                loss = compute_ranking_loss(output_rank_left, output_rank_right, label, rank_crit)
+                rank_acc = compute_ranking_accuracy(output_rank_left, output_rank_right, label)
 
             if evaluator.state.iteration == 1:
                 segmentation = forward_dict['left']['segmentation'][0]
