@@ -47,10 +47,11 @@ for attribute, model in MODELS.items():
 
     net = SegRank(image_size=(244,244))
     net.load_state_dict(torch.load(model, map_location=device))
+    net.to(device)
     net.eval()
     print(f'loaded {model}')
-    scores = torch.Tensor()
-    classifications = torch.Tensor().long()
+    scores = torch.Tensor().to(device)
+    classifications = torch.Tensor().long().to(device)
     for i,batch in enumerate(loader):
         input_left, input_right, label = batch['left_image'].to(device), batch['right_image'].to(device), batch['winner'].to(device)
         with torch.no_grad():
