@@ -15,7 +15,7 @@ dist.init_process_group('gloo', init_method='file:///tmp/tmpfile', rank=0, world
 PLACE_PULSE_PATH ='votes'
 IMAGES_PATH= 'pp_cropped/'
 MODELS = {
-    'wealthy':'segrank_resnet_wealthy_12_model_23.pth',
+    'wealthy':'models/segrank_resnet_wealthy_12_model_23.pth',
     'depressing':'segrank_resnet_depressing_12_model_13.pth',
     'safety':'segrank_resnet_safety_12_model_25.pth',
     'lively':'segrank_resnet_lively_12_model_28.pth',
@@ -33,6 +33,7 @@ transformers = transforms.Compose([
         AdaptTransform(seg_transforms.ToTorchDims())
         ])
 
+f = open('test.txt', 'w')
 for attribute, model in MODELS.items():
 
     dataset=PlacePulseDataset(
@@ -49,16 +50,20 @@ for attribute, model in MODELS.items():
     net.load_state_dict(torch.load(model, map_location=device))
     net.to(device)
     net.eval()
-    print(f'loaded {model}')
+    f.write(f'loaded {model}\n')
+    f.flush()
     scores = torch.Tensor().to(device)
     classifications = torch.Tensor().long().to(device)
     for i,batch in enumerate(loader):
         input_left, input_right, label = batch['left_image'].to(device), batch['right_image'].to(device), batch['winner'].to(device)
         with torch.no_grad():
             forward_dict = net(input_left,input_right)
-            output_rank_left, output_rank_right =  forward_dict['left']['output'], forward_dict['right']['output']
-            diff = (output_rank_left - output_rank_right).squeeze(1)
-            scores = torch.cat((scores, diff),0)
-            classifications = torch.cat((classifications, label),0)
-            print(f'{i}/{len(loader)}', end='\r')
-    print(f'{attribute}: {roc_auc_score(classifications, scores)}')
+        output_rank_left, output_rank_right =  forward_dict['left']['output'], forward_dict['right']['output']
+        diff = (output_rank_left - output_rank_right).squeeze(1)
+        scores = torch.cat((scores, diff),0)
+        classifications = torch.cat((classifications, label),0)
+        f.write(f'{i}/{len(loader)}\n')
+        f.flush()
+    f.write(f'{attribute}: {roc_auc_score(classifications, scores)}\n')
+    f.flush()
+f.close()
