@@ -35,7 +35,7 @@ def arg_parse():
     parser.add_argument('--wd', help="weight decay regularization", default=0.0, type=float)
     parser.add_argument('--num_workers', help="number of workers for data loader", default=4, type=int)
     parser.add_argument('--model_dir', help="directory to load and save models", default='models/', type=str)
-    parser.add_argument('--model', help="model to use, sscnn or rsscnn", default='rcnn', type=str, choices=['rsscnn','sscnn','rcnn', 'segrank'])
+    parser.add_argument('--model', help="model to use, sscnn or rsscnn", default='rcnn', type=str, choices=['rsscnn','sscnn','rcnn', 'segrank', 'attentionrcnn'])
     parser.add_argument('--epoch', help="epoch to load training", default=1, type=int)
     parser.add_argument('--max_epochs', help="maximum training epochs", default=10, type=int)
     parser.add_argument('--cuda_id', help="gpu id", default=0, type=int)
@@ -73,7 +73,7 @@ if __name__ == '__main__':
                 AdaptTransform(transforms.Resize((244,244))),
                 AdaptTransform(transforms.ToTensor())
                 ])
-        return_images = False
+        return_images = True
     else:
         IMG_MEAN = np.array((104.00698793,116.66876762,122.67891434), dtype=np.float32)
         train_transforms = transforms.Compose([
@@ -127,6 +127,9 @@ if __name__ == '__main__':
         from train_scripts.SegRank import train
         import torch.distributed as dist
         dist.init_process_group('gloo', init_method='file:///tmp/tmpfile', rank=0, world_size=1)
+    elif args.model =='attentionrcnn':
+        from nets.AttentionRCNN import AttentionRCNN as Net
+        from train_scripts.SegRank import train
     else:
         from nets.rsscnn import RSsCnn as Net
         from train_scripts.rsscnn import train
@@ -137,16 +140,23 @@ if __name__ == '__main__':
         'dense':models.densenet121,
         'resnet':models.resnet50
     }
-    if args.model != 'segrank':
-        net = Net(models[args.premodel], finetune=args.finetune)
-    else:
+    if args.model == 'segrank':
         net = Net(
             image_size=(244,244),
             n_layers=args.n_layers,
             n_heads=args.n_heads,
             softmax=args.softmax,
             n_outputs=args.n_outputs
-            )
+        )
+    elif args.model == 'attentionrcnn':
+        net = Net(
+            models[args.premodel],
+            finetune=args.finetune,
+            n_layers=args.n_layers,
+            n_heads=args.n_heads,
+        )
+    else:
+        net = Net(models[args.premodel], finetune=args.finetune)
     if args.resume:
         net.load_state_dict(torch.load(os.path.join(args.model_dir,'{}_{}_{}_model_{}.pth'.format(
             args.model,
