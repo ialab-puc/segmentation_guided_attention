@@ -21,7 +21,7 @@ ATTR_ID = {
 ## Data loader class
 class PlacePulseDataset(Dataset):
 
-    def __init__(self,csv_file,img_dir,transform=None, cat=None, equal=False,logger=None,return_images=False):
+    def __init__(self,csv_file,img_dir,transform=None, cat=None, equal=False,logger=None,return_images=False, return_ids=False):
         self.placepulse_data = pd.read_csv(csv_file)
         if cat:
             self.placepulse_data = self.placepulse_data[self.placepulse_data['category'] == cat]
@@ -32,6 +32,7 @@ class PlacePulseDataset(Dataset):
         self.transform = transform
         self.label = {'left':1, 'right':-1,'equal':0}
         self.return_images = return_images
+        self.return_ids = return_ids
 
     def __len__(self):
         return len(self.placepulse_data)
@@ -52,6 +53,9 @@ class PlacePulseDataset(Dataset):
         if self.return_images:
             sample['left_image_original'] = left_image
             sample['right_image_original'] = right_image
+        if self.return_ids:
+            sample['left_id'] = self.placepulse_data.iloc[idx, 0]
+            sample['right_id'] = self.placepulse_data.iloc[idx, 1]
         end = timer()
         if self.logger: self.logger.info(f'DATALOADER,{end-start:.4f}')
         return sample
