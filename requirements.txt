@@ -53,7 +53,7 @@ PyHamcrest==1.9.0
 pyparsing==2.3.0
 pyrsistent==0.15.7
 python-dateutil==2.7.5
-pytorch-ignite==0.1.2
+pytorch-ignite==0.3.0
 pytz==2018.7
 PyWavelets==1.0.1
 pyzmq==17.1.2
