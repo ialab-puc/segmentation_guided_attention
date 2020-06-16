@@ -70,6 +70,6 @@ for attribute, model in MODELS.items():
     if df is None:
         df=pd.DataFrame.from_dict(image_hash, orient='index', columns=[attribute])
     else:
-        df[attribute] = pd.Series(image_hash)    
+        df=df.join(pd.DataFrame.from_dict(other_hash, orient='index', columns=[attribute]),how='outer')
     df.to_csv('rank.csv', index_label='id')
 f.close()

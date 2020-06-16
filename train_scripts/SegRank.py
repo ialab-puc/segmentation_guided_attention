@@ -11,6 +11,7 @@ from PIL import Image as PILImage
 from utils.ranking import *
 from utils.log import console_log, comet_log, comet_image_log, image_log
 from utils.image_gen import get_palette
+from utils.accuracy import RankAccuracy
 from loss import RankingLoss
 
 def train(device, net, dataloader, val_loader, args, logger, experiment):
@@ -45,7 +46,10 @@ def train(device, net, dataloader, val_loader, args, logger, experiment):
             image_log(segmentation,original,attention_map,palette,experiment,0, normalize=args.attention_normalize)
 
         return  { 'loss':loss.item(),
-                'rank_acc': rank_acc
+                'rank_acc': rank_acc,
+                'rank_left': output_rank_left,
+                'rank_right': output_rank_right,
+                'label': label
                 }
 
     def inference(engine,data):
@@ -70,7 +74,10 @@ def train(device, net, dataloader, val_loader, args, logger, experiment):
                 image_log(segmentation,original,attention_map,palette,experiment,trainer.state.epoch, normalize=args.attention_normalize)
 
             return  { 'loss':loss.item(),
-                'rank_acc': rank_acc
+                'rank_acc': rank_acc,
+                'rank_left': output_rank_left,
+                'rank_right': output_rank_right,
+                'label': label
                 }
 
     net = net.to(device)
@@ -88,11 +95,13 @@ def train(device, net, dataloader, val_loader, args, logger, experiment):
     evaluator = Engine(inference)
 
     palette = get_palette(19)
-    RunningAverage(output_transform=lambda x: x['loss']).attach(trainer, 'loss')
-    RunningAverage(output_transform=lambda x: x['rank_acc']).attach(trainer, 'rank_acc')
+    RunningAverage(output_transform=lambda x: x['loss'], device=device).attach(trainer, 'loss')
+    RunningAverage(output_transform=lambda x: x['rank_acc'], device=device).attach(trainer, 'rank_acc')
+    RankAccuracy(output_transform=lambda x: (x['rank_left'], x['rank_right'], x['label']), device=device).attach(trainer,'acc')
 
-    RunningAverage(output_transform=lambda x: x['loss']).attach(evaluator, 'loss')
-    RunningAverage(output_transform=lambda x: x['rank_acc']).attach(evaluator, 'rank_acc')
+    RunningAverage(output_transform=lambda x: x['loss'], device=device).attach(evaluator, 'loss')
+    RunningAverage(output_transform=lambda x: x['rank_acc'], device=device).attach(evaluator, 'rank_acc')
+    RankAccuracy(output_transform=lambda x: (x['rank_left'], x['rank_right'], x['label']),device=device).attach(evaluator,'acc')
 
     if args.pbar:
         pbar = ProgressBar(persist=False)
@@ -105,12 +114,14 @@ def train(device, net, dataloader, val_loader, args, logger, experiment):
     def log_validation_results(trainer):
         net.eval()
         evaluator.run(val_loader)
-        trainer.state.metrics['val_acc'] = evaluator.state.metrics['rank_acc']
+        trainer.state.metrics['val_acc'] = evaluator.state.metrics['acc']
         net.train()
         if hasattr(net,'partial_eval'): net.partial_eval()
         metrics = {
                 'train_rank_accuracy':trainer.state.metrics['rank_acc'],
                 'train_loss':trainer.state.metrics['loss'],
+                'acc': trainer.state.metrics['acc'],
+                'val_acc': evaluator.state.metrics['acc'],
                 'val_rank_accuracy': evaluator.state.metrics['rank_acc'],
                 'val_loss':evaluator.state.metrics['loss']
             }
