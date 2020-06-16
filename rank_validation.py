@@ -12,18 +12,18 @@ import seg_transforms
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 dist.init_process_group('gloo', init_method='file:///tmp/tmpfile', rank=0, world_size=1)
 PLACE_PULSE_PATH ='votes'
-IMAGES_PATH= 'pp_cropped/'
+IMAGES_PATH= '../datasets/placepulse/'
 MODELS = {
-    'wealthy':'models/segrank_resnet_wealthy_15_model_33.pth',
-    'depressing': 'models/segrank_resnet_depressing_15_model_5.pth',
-    'safety': 'models/segrank_resnet_safety_15_model_34.pth',
-    'boring': 'models/segrank_resnet_boring_15_model_14.pth',
-    'lively': 'models/segrank_resnet_lively_15_model_20.pth',
-    'beautiful':'models/segrank_resnet_beautiful_15_model_9.pth',
+    'wealthy':'../storage/models_seg/segrank_resnet_wealthy_15_model_33.pth',
+    'depressing': '../storage/models_seg/segrank_resnet_depressing_15_model_5.pth',
+    'safety': '../storage/models_seg/segrank_resnet_safety_15_model_34.pth',
+    'boring': '../storage/models_seg/segrank_resnet_boring_15_model_14.pth',
+    'lively': '../storage/models_seg/segrank_resnet_lively_15_model_20.pth',
+    'beautiful':'../storage/models_seg/segrank_resnet_beautiful_15_model_9.pth',
 }
 
 IMG_MEAN = np.array((104.00698793,116.66876762,122.67891434), dtype=np.float32)
-BATCH_SIZE = 2
+BATCH_SIZE = 8
 N_LAYERS=1
 N_HEADS=1
 SOFTMAX=True
@@ -63,13 +63,13 @@ for attribute, model in MODELS.items():
             forward_dict = net(input_left,input_right)
         output_rank_left, output_rank_right =  forward_dict['left']['output'], forward_dict['right']['output']
         for i in range(len(left_id)):
-            if left_id[i] not in image_hash: image_hash[left_id[i]] = output_rank_left.squeeze().cpu().numpy()
-            if right_id[i] not in image_hash: image_hash[right_id[i]] = output_rank_right.squeeze().cpu().numpy()
+            if left_id[i] not in image_hash: image_hash[left_id[i]] = output_rank_left.squeeze().cpu().numpy()[i]
+            if right_id[i] not in image_hash: image_hash[right_id[i]] = output_rank_right.squeeze().cpu().numpy()[i]
         f.write(f'{index}/{len(loader)}\n')
         f.flush()
     if df is None:
         df=pd.DataFrame.from_dict(image_hash, orient='index', columns=[attribute])
     else:
-        df=df.join(pd.DataFrame.from_dict(other_hash, orient='index', columns=[attribute]),how='outer')
+        df=df.join(pd.DataFrame.from_dict(image_hash, orient='index', columns=[attribute]),how='outer')
     df.to_csv('rank.csv', index_label='id')
 f.close()
