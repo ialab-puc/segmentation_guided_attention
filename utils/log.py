@@ -25,7 +25,8 @@ def image_log(segmentation,original,attention_map,palette,experiment,epoch, norm
     if segmentation is not None:
         seg_img = segmentation_to_image(segmentation,palette)
         comet_image_log(seg_img,f'segmentation_epoch:{epoch}',experiment, epoch=epoch)
-    attentions = attention_to_images(original, attention_map, normalize=normalize)
+    if attention_map is not None:
+        attentions = attention_to_images(original, attention_map, normalize=normalize)
+        for i,image in enumerate(attentions):
+            comet_image_log(image,f'attention_head:{i}_epoch:{epoch}',experiment, epoch=epoch)
     comet_image_log(original,f'original_epoch{epoch}',experiment, epoch=epoch)
-    for i,image in enumerate(attentions):
-        comet_image_log(image,f'attention_head:{i}_epoch:{epoch}',experiment, epoch=epoch)

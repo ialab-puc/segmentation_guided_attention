@@ -36,7 +36,7 @@ def arg_parse():
     parser.add_argument('--wd', help="weight decay regularization", default=0.0, type=float)
     parser.add_argument('--num_workers', help="number of workers for data loader", default=4, type=int)
     parser.add_argument('--model_dir', help="directory to load and save models", default='models/', type=str)
-    parser.add_argument('--model', help="model to use, sscnn or rsscnn", default='rcnn', type=str, choices=['rsscnn','sscnn','rcnn', 'segrank', 'attentionrcnn'])
+    parser.add_argument('--model', help="model to use, sscnn or rsscnn", default='rcnn', type=str, choices=['rsscnn','sscnn','rcnn', 'segrank', 'attentionrcnn', 'sgrb'])
     parser.add_argument('--epoch', help="epoch to load training", default=1, type=int)
     parser.add_argument('--max_epochs', help="maximum training epochs", default=10, type=int)
     parser.add_argument('--cuda_id', help="gpu id", default=0, type=int)
@@ -60,12 +60,10 @@ if __name__ == '__main__':
     logger = logging.getLogger('timer')
     logger.setLevel(logging.WARNING) #set the minimum level of message logging
 
-    if args.model != "segrank":
+    if args.model not in  ["segrank", 'sgrb']:
         train_transforms = transforms.Compose([
                 AdaptTransform(transforms.ToPILImage()),
-                # AdaptTransform(transforms.Resize((244,244))),
-                AdaptTransform(transforms.RandomResizedCrop(244)),
-                AdaptTransform(transforms.RandomHorizontalFlip(p=0.3)),
+                AdaptTransform(transforms.Resize((244,244))),
                 AdaptTransform(transforms.ToTensor())
                 ])
 
@@ -131,6 +129,11 @@ if __name__ == '__main__':
     elif args.model =='attentionrcnn':
         from nets.AttentionRCNN import AttentionRCNN as Net
         from train_scripts.SegRank import train
+    elif args.model == 'sgrb':
+        from nets.SegRankBaseline import SegRank as Net
+        from train_scripts.SegRank import train
+        import torch.distributed as dist
+        dist.init_process_group('gloo', init_method='file:///tmp/tmpfile', rank=0, world_size=1)
     else:
         from nets.rsscnn import RSsCnn as Net
         from train_scripts.rsscnn import train
@@ -156,6 +159,8 @@ if __name__ == '__main__':
             n_layers=args.n_layers,
             n_heads=args.n_heads,
         )
+    elif args.model == 'sgrb':
+        net = Net(image_size=(244,244))
     else:
         net = Net(models[args.premodel], finetune=args.finetune)
     if args.resume:

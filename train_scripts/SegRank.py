@@ -42,7 +42,7 @@ def train(device, net, dataloader, val_loader, args, logger, experiment):
         if trainer.state.iteration == 1:
             segmentation = forward_dict['left'].get('segmentation',[None])[0]
             original = left_original[0]
-            attention_map = forward_dict['left']['attention'][0][0]
+            attention_map = forward_dict['left'].get('attention',[[None]])[0][0]
             image_log(segmentation,original,attention_map,palette,experiment,0, normalize=args.attention_normalize)
 
         return  { 'loss':loss.item(),
@@ -70,7 +70,7 @@ def train(device, net, dataloader, val_loader, args, logger, experiment):
             if evaluator.state.iteration == 1:
                 segmentation = forward_dict.get('segmentation',[None])[0]
                 original = left_original[0]
-                attention_map = forward_dict['left']['attention'][0][0]
+                attention_map = forward_dict['left'].get('attention',[[None]])[0][0]
                 image_log(segmentation,original,attention_map,palette,experiment,trainer.state.epoch, normalize=args.attention_normalize)
 
             return  { 'loss':loss.item(),
