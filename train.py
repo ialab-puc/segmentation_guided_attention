@@ -30,6 +30,7 @@ def arg_parse():
     parser.add_argument('--n_heads', help="number of attention heads for segrank", default=1, type=int)
     parser.add_argument('--n_outputs', help="number of outputs for segrank", default=1, type=int)
     parser.add_argument('--softmax', help="use softmax on Pspnet", action='store_true')
+    parser.add_argument('--logexp', help="use logexp loss", action='store_true')
     parser.add_argument('--lr', help="learning_rate", default=0.001, type=float)
     parser.add_argument('--resume','--r', help="resume training",action='store_true')
     parser.add_argument('--wd', help="weight decay regularization", default=0.0, type=float)

@@ -26,7 +26,6 @@ class LogSumExpLoss(nn.Module):
         tie_y =  1 - bin_y
         rank_loss = torch.log(1 + torch.exp(-y*diff)) * bin_y
         tie_loss = torch.log(torch.exp(diff) +  torch.exp(-diff)) * tie_y
-        print(rank_loss, tie_loss)
         return torch.mean(rank_loss + tie_loss)
 
 if __name__ == '__main__':
