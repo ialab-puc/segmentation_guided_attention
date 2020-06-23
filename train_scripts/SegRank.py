@@ -12,7 +12,7 @@ from utils.ranking import *
 from utils.log import console_log, comet_log, comet_image_log, image_log
 from utils.image_gen import get_palette
 from utils.accuracy import RankAccuracy
-from loss import RankingLoss, LogSumExpLoss
+from loss import RankingLoss, LogSumExpLoss, RegressionRegularizer, RegularizedLoss
 
 def train(device, net, dataloader, val_loader, args, logger, experiment):
     def update(engine, data):
@@ -90,6 +90,9 @@ def train(device, net, dataloader, val_loader, args, logger, experiment):
             print("using tie loss")
         else:
             rank_crit = nn.MarginRankingLoss(reduction='mean', margin=1)
+    if args.enlarge:
+        reg = RegressionRegularizer()
+        rank_crit =  RegularizedLoss(rank_crit, reg)
 
     #optimizer = optim.SGD(net.parameters(), lr=args.lr, weight_decay=args.wd, momentum=0.9)
     optimizer = optim.Adam(net.parameters(), lr=args.lr, weight_decay=args.wd, betas=(0.9, 0.98), eps=1e-09)

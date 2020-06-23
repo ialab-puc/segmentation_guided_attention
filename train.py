@@ -47,6 +47,7 @@ def arg_parse():
     parser.add_argument('--comet','--cm', help="use comet", action='store_true')
     parser.add_argument('--tag','--t', help="extra tag for comet and model name", default='', type=str)
     parser.add_argument('--attention_normalize','--at', help="how to normalize attention images for segrank.", default="local", type=str, choices=['local','global'])
+    parser.add_argument('--enlarge', help="use rank enlargement.", action='store_true')
     return parser
 
 
@@ -150,7 +151,8 @@ if __name__ == '__main__':
             n_layers=args.n_layers,
             n_heads=args.n_heads,
             softmax=args.softmax,
-            n_outputs=args.n_outputs
+            n_outputs=args.n_outputs,
+            enlarge=args.enlarge
         )
     elif args.model == 'attentionrcnn':
         net = Net(
