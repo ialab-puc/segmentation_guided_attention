@@ -26,7 +26,7 @@ warnings.filterwarnings("ignore")
 device = torch.device("cuda:{}".format('0') if torch.cuda.is_available() else "cpu")
 
 class SegRank(nn.Module):
-    def __init__(self,image_size=(340,480), restore=RESTORE_FROM, n_layers=2, n_heads=NUM_CLASSES, n_outputs=1, softmax=True, enlarge=False):
+    def __init__(self,image_size=(340,480), restore=RESTORE_FROM, n_layers=2, n_heads=NUM_CLASSES, n_outputs=1, softmax=True, reg=False):
         super(SegRank, self).__init__()
         self.image_h, self.image_w = image_size
         self.seg_net = Seg_Model(num_classes=NUM_CLASSES)
