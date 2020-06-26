@@ -68,7 +68,7 @@ def train(device, net, dataloader, val_loader, args, logger, experiment):
                 rank_acc = compute_ranking_accuracy(output_rank_left, output_rank_right, label)
 
             if evaluator.state.iteration == 1:
-                segmentation = forward_dict.get('segmentation',[None])[0]
+                segmentation = forward_dict['left'].get('segmentation',[None])[0]
                 original = left_original[0]
                 attention_map = forward_dict['left'].get('attention',[[None]])[0][0]
                 image_log(segmentation,original,attention_map,palette,experiment,trainer.state.epoch, normalize=args.attention_normalize)

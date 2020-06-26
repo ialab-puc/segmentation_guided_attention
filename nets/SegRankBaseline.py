@@ -53,8 +53,8 @@ class SegRank(nn.Module):
     def single_forward(self, batch):
         batch_size = batch.size()[0]
         seg_output =  self.softmax(self.seg_net(batch)[0]) if self.softmax is not None else self.seg_net(batch)[0]
-        seg_output = self.interp(seg_output).permute([0,2,3,1])
-        x = self.fc_seg(seg_output)
+        seg_output_permuted = self.interp(seg_output).permute([0,2,3,1])
+        x = self.fc_seg(seg_output_permuted)
         x = self.pool(x).view(batch_size, self.image_h*self.image_w//4)
         x = self.fc_1(x)
         x = self.relu(x)
