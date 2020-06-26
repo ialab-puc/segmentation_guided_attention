@@ -30,10 +30,8 @@ def train(device, net, dataloader, val_loader, args, logger, experiment):
 
         if args.attribute == 'all':
             loss = compute_multiple_ranking_loss(output_rank_left, output_rank_right, label, rank_crit, attribute)
-            rank_acc = compute_multiple_ranking_accuracy(output_rank_left, output_rank_right, label, attribute)
         else:
             loss = compute_ranking_loss(output_rank_left, output_rank_right, label, rank_crit)
-            rank_acc = compute_ranking_accuracy(output_rank_left, output_rank_right, label)
 
         # backward step
         loss.backward()
@@ -47,7 +45,6 @@ def train(device, net, dataloader, val_loader, args, logger, experiment):
             image_log(segmentation,original,attention_map,palette,experiment,0, normalize=args.attention_normalize)
 
         return  { 'loss':loss.item(),
-                'rank_acc': rank_acc,
                 'rank_left': output_rank_left,
                 'rank_right': output_rank_right,
                 'label': label
@@ -63,10 +60,8 @@ def train(device, net, dataloader, val_loader, args, logger, experiment):
             output_rank_left, output_rank_right =  forward_dict['left']['output'], forward_dict['right']['output']
             if args.attribute == 'all':
                 loss = compute_multiple_ranking_loss(output_rank_left, output_rank_right, label, rank_crit, attribute)
-                rank_acc = compute_multiple_ranking_accuracy(output_rank_left, output_rank_right, label, attribute)
             else:
                 loss = compute_ranking_loss(output_rank_left, output_rank_right, label, rank_crit)
-                rank_acc = compute_ranking_accuracy(output_rank_left, output_rank_right, label)
 
             if evaluator.state.iteration == 1:
                 segmentation = forward_dict['left'].get('segmentation',[None])[0]
@@ -75,7 +70,6 @@ def train(device, net, dataloader, val_loader, args, logger, experiment):
                 image_log(segmentation,original,attention_map,palette,experiment,trainer.state.epoch, normalize=args.attention_normalize)
 
             return  { 'loss':loss.item(),
-                'rank_acc': rank_acc,
                 'rank_left': output_rank_left,
                 'rank_right': output_rank_right,
                 'label': label
@@ -105,19 +99,17 @@ def train(device, net, dataloader, val_loader, args, logger, experiment):
 
     palette = get_palette(19)
     RunningAverage(output_transform=lambda x: x['loss'], device=device).attach(trainer, 'loss')
-    RunningAverage(output_transform=lambda x: x['rank_acc'], device=device).attach(trainer, 'rank_acc')
     RankAccuracy(output_transform=lambda x: (x['rank_left'], x['rank_right'], x['label']), device=device).attach(trainer,'acc')
 
     RunningAverage(output_transform=lambda x: x['loss'], device=device).attach(evaluator, 'loss')
-    RunningAverage(output_transform=lambda x: x['rank_acc'], device=device).attach(evaluator, 'rank_acc')
     RankAccuracy(output_transform=lambda x: (x['rank_left'], x['rank_right'], x['label']),device=device).attach(evaluator,'acc')
 
     if args.pbar:
         pbar = ProgressBar(persist=False)
-        pbar.attach(trainer,['loss', 'rank_acc'])
+        pbar.attach(trainer,['loss'])
 
         pbar = ProgressBar(persist=False)
-        pbar.attach(evaluator,['loss','rank_acc'])
+        pbar.attach(evaluator,['loss'])
 
     @trainer.on(Events.EPOCH_COMPLETED)
     def log_validation_results(trainer):
@@ -127,11 +119,9 @@ def train(device, net, dataloader, val_loader, args, logger, experiment):
         net.train()
         if hasattr(net,'partial_eval'): net.partial_eval()
         metrics = {
-                'train_rank_accuracy':trainer.state.metrics['rank_acc'],
                 'train_loss':trainer.state.metrics['loss'],
                 'acc': trainer.state.metrics['acc'],
                 'val_acc': evaluator.state.metrics['acc'],
-                'val_rank_accuracy': evaluator.state.metrics['rank_acc'],
                 'val_loss':evaluator.state.metrics['loss']
             }
         comet_log(
@@ -146,7 +136,6 @@ def train(device, net, dataloader, val_loader, args, logger, experiment):
     def log_training_results(trainer):
         if trainer.state.iteration %100 == 0:
             metrics = {
-                    'train_rank_accuracy':trainer.state.metrics['rank_acc'],
                     'train_loss':trainer.state.metrics['loss'],
                     'lr': scheduler.get_lr()
                 }
