@@ -7,6 +7,7 @@ from ignite.engine import Engine, Events
 from ignite.metrics import Accuracy,Loss, RunningAverage
 from ignite.contrib.handlers import ProgressBar
 from ignite.handlers import ModelCheckpoint
+from random import randint
 from PIL import Image as PILImage
 from utils.ranking import *
 from utils.log import console_log, comet_log, comet_image_log, image_log
@@ -179,7 +180,7 @@ def train(device, net, dataloader, val_loader, args, logger, experiment):
         trainer.add_event_handler(Events.STARTED, start_epoch)
         evaluator.add_event_handler(Events.STARTED, start_epoch)
 
-    trainer.run(dataloader,max_epochs=args.max_epochs)
+    trainer.run(dataloader,max_epochs=args.max_epochs, seed=randint(1,15))
 
 if __name__ == '__main__':
     net = SegRank(image_size=(244,244))
