@@ -14,12 +14,12 @@ dist.init_process_group('gloo', init_method='file:///tmp/tmpfile', rank=0, world
 PLACE_PULSE_PATH ='votes'
 IMAGES_PATH= '../datasets/placepulse/'
 MODELS = {
-    'wealthy':'../storage/models_seg/segrank_resnet_wealthy_15_model_33.pth',
-    'depressing': '../storage/models_seg/segrank_resnet_depressing_15_model_5.pth',
-    'safety': '../storage/models_seg/segrank_resnet_safety_15_model_34.pth',
-    'boring': '../storage/models_seg/segrank_resnet_boring_15_model_14.pth',
-    'lively': '../storage/models_seg/segrank_resnet_lively_15_model_20.pth',
-    'beautiful':'../storage/models_seg/segrank_resnet_beautiful_15_model_9.pth',
+    'wealthy':'../storage/models_seg/segrank_resnet_wealthy_15_reg_model_0.6167474968710889.pth'
+    #'depressing': '../storage/models_seg/segrank_resnet_depressing_15_acc_model_0.6215900597907325.pth'
+    #'safety': '../storage/models_seg/segrank_resnet_safety_15_model_34.pth',
+    #'boring': '../storage/models_seg/segrank_resnet_boring_15_model_14.pth',
+    #'lively': '../storage/models_seg/segrank_resnet_lively_15_model_20.pth',
+    #'beautiful':'../storage/models_seg/segrank_resnet_beautiful_15_model_9.pth',
 }
 
 IMG_MEAN = np.array((104.00698793,116.66876762,122.67891434), dtype=np.float32)

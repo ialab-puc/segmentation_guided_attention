@@ -24,3 +24,4 @@ logs/*
 *.json
 segmentation
 *.ipynb
+output/*

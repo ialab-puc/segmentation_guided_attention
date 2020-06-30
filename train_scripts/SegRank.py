@@ -92,7 +92,7 @@ def train(device, net, dataloader, val_loader, args, logger, experiment):
 
     #optimizer = optim.SGD(net.parameters(), lr=args.lr, weight_decay=args.wd, momentum=0.9)
     optimizer = optim.Adam(net.parameters(), lr=args.lr, weight_decay=args.wd, betas=(0.9, 0.98), eps=1e-09)
-    scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=1000, gamma=0.995, last_epoch=-1)
+    scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=10000, gamma=0.995, last_epoch=-1)
 
     trainer = Engine(update)
     evaluator = Engine(inference)
