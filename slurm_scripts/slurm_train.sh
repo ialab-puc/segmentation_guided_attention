@@ -19,7 +19,7 @@ pyenv/bin/python3 train.py  --model segrank \
 --max_epochs 40 \
 --premodel resnet \
 --attribute wealthy \
---wd 0 \
+--wd 0.0001 \
 --lr 0.001  \
 --batch_size 32 \
 --dataset ../datasets/placepulse  \
@@ -27,7 +27,7 @@ pyenv/bin/python3 train.py  --model segrank \
 --tag attn_resnet \
 --csv votes/ \
 --attention_normalize local \
---n_layers 1 --n_heads 1 --n_outputs \
+--n_layers 1 --n_heads 1 --n_outputs 1 \
 --eq --cuda \
 --cm \
 --softmax \
