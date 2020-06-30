@@ -39,9 +39,11 @@ def train(device, net, dataloader, val_loader, args, logger, experiment):
         scheduler.step()
 
         if trainer.state.iteration == 1:
-            segmentation = forward_dict['left'].get('segmentation',[None])[0]
-            original = left_original[0]
-            attention_map = forward_dict['left'].get('attention',[[None]])[0][0]
+            segmentation = forward_dict['left'].get('segmentation',[None])
+            index = randint(0, len(segmentation) - 1)
+            segmentation = segmentation[index]
+            original = left_original[index]
+            attention_map = forward_dict['left'].get('attention',[[None]])[0][index]
             image_log(segmentation,original,attention_map,palette,experiment,0, normalize=args.attention_normalize)
 
         return  { 'loss':loss.item(),
@@ -62,11 +64,13 @@ def train(device, net, dataloader, val_loader, args, logger, experiment):
                 loss = compute_multiple_ranking_loss(output_rank_left, output_rank_right, label, rank_crit, attribute)
             else:
                 loss = compute_ranking_loss(output_rank_left, output_rank_right, label, rank_crit)
-
-            if evaluator.state.iteration == 1:
-                segmentation = forward_dict['left'].get('segmentation',[None])[0]
-                original = left_original[0]
-                attention_map = forward_dict['left'].get('attention',[[None]])[0][0]
+            log_iteration = randint(1, len(val_loader))
+            if evaluator.state.iteration == log_iteration:
+                segmentation = forward_dict['left'].get('segmentation',[None])
+                index = randint(0, len(segmentation) - 1)
+                segmentation = segmentation[index]
+                original = left_original[index]
+                attention_map = forward_dict['left'].get('attention',[[None]])[0][index]
                 image_log(segmentation,original,attention_map,palette,experiment,trainer.state.epoch, normalize=args.attention_normalize)
 
             return  { 'loss':loss.item(),
