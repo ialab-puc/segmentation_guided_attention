@@ -22,7 +22,11 @@ class AttentionRCNN(nn.Module):
         self.dims = output_size[1]*2
         self.cnn_size = output_size
         self.attentions = nn.ModuleList([nn.MultiheadAttention(self.cnn_size[1], self.n_heads) for _ in range(self.n_layers)])
-        self.rank_fc_out = nn.Linear(self.cnn_size[2]*self.cnn_size[3]*self.cnn_size[1], 1)
+        
+        self.rank_fc = nn.Linear(self.cnn_size[2]*self.cnn_size[3]*self.cnn_size[1], 500)
+        self.relu = nn.ReLU()
+        self.drop  = nn.Dropout(0.3)
+        self.rank_fc_out = nn.Linear(500, 1)
 
     def forward(self,left_batch, right_batch):
         return {
@@ -40,6 +44,7 @@ class AttentionRCNN(nn.Module):
             x, attn_weights = attention(x, x, x)
             attn_list.append(attn_weights)
         x = x.permute([1,0,2]).contiguous().view(batch_size,self.cnn_size[2]*self.cnn_size[3]*self.cnn_size[1])
+        x = self.drop(self.relu(self.rank_fc(x)))
         x = self.rank_fc_out(x)
         return {
             'output': x,
