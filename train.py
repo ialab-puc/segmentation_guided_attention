@@ -50,6 +50,8 @@ def arg_parse():
     parser.add_argument('--reg', help="use rank reg.", action='store_true')
     parser.add_argument('--positive', help="restrict output to be positive", action='store_true')
     parser.add_argument('--alpha', help="rank reg weight", default=0.1, type=float)
+    parser.add_argument('--lr_decay', help="use lr_decay", action='store_true')
+    parser.add_argument('--sgd', help="use sgd", action='store_true')
     return parser
 
 
