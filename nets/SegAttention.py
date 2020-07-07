@@ -53,12 +53,11 @@ class SegAttention(nn.Module):
         self.seg_dims = self.seg_net(sample)[0].size() # for layer size definitionlayers
 
         self.cnn_size  = self.cnn(sample).size()
-        self.dims = self.cnn_size [1]*2
 
         print(self.seg_dims)
         print(self.cnn_size)
 
-        self.attentions = nn.ModuleList([nn.MultiheadAttention(NUM_CLASSES, self.n_heads) for _ in range(self.n_layers)])
+        self.attentions = nn.ModuleList([nn.MultiheadAttention(embed_dim=NUM_CLASSES, num_heads=self.n_heads, dropout=0, kdim=self.cnn_size[1], vdim=self.cnn_size[1]) for _ in range(self.n_layers)])
         self.output = nn.Linear(self.seg_dims[2]*self.seg_dims[3]*NUM_CLASSES, self.n_outputs)
 
     def forward(self, left_batch, right_batch):
@@ -69,12 +68,18 @@ class SegAttention(nn.Module):
 
     def single_forward(self, batch):
         batch_size = batch.size()[0]
+
         seg_output =  self.softmax(self.seg_net(batch)[0]) if self.softmax is not None else self.seg_net(batch)[0]
         seg_output_permuted = seg_output.permute([2,3,0,1])
-        x = seg_output_permuted.contiguous().view(self.seg_dims[2]*self.seg_dims[3],batch_size, NUM_CLASSES)
+        segmentation = seg_output_permuted.contiguous().view(self.seg_dims[2]*self.seg_dims[3],batch_size, NUM_CLASSES)
+
+        x = self.cnn(batch)
+        x = x.permute([2,3,0,1])
+        x = x.view(self.cnn_size[2]*self.cnn_size[3],batch_size,self.cnn_size[1])
+
         attn_list = []
         for attention in self.attentions:
-            x, attn_weights = attention(x, x, x) #attn is size nxn , first row says importance of each pixel on calculating first pixel.
+            x, attn_weights = attention(segmentation, x, x)
             attn_list.append(attn_weights)
         x = x.permute([1,0,2]).contiguous().view(batch_size,self.seg_dims[2]*self.seg_dims[3]*NUM_CLASSES)
         x = self.output(x)
@@ -95,9 +100,9 @@ if __name__ == '__main__':
     dist.init_process_group('gloo', init_method='file:///tmp/tmpfile', rank=0, world_size=1)
 
     h, w = map(int, INPUT_SIZE.split(','))
-    model = SegAttention(models.resnet50, restore=RESTORE_FROM)
-    # left = torch.randn([3,h,w]).unsqueeze(0).to(device)
-    # right = torch.randn([3,h,w]).unsqueeze(0).to(device)
-    # model.eval()
-    # model.to(device)
-    # print(model(left, right))
+    model = SegAttention(models.resnet50, restore=RESTORE_FROM, n_heads=1, n_layers=1)
+    left = torch.randn([3,h,w]).unsqueeze(0).to(device)
+    right = torch.randn([3,h,w]).unsqueeze(0).to(device)
+    model.eval()
+    model.to(device)
+    print(model(left, right))
