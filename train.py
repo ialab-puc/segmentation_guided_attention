@@ -152,8 +152,7 @@ if __name__ == '__main__':
             n_layers=args.n_layers,
             n_heads=args.n_heads,
             softmax=args.softmax,
-            n_outputs=args.n_outputs,
-            positive=args.positive
+            n_outputs=args.n_outputs
         )
     elif args.model == 'attentionrcnn':
         net = Net(
