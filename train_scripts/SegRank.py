@@ -44,7 +44,10 @@ def train(device, net, dataloader, val_loader, args, logger, experiment):
             index = randint(0, len(segmentation) - 1)
             segmentation = segmentation[index]
             original = left_original[index]
-            attention_map = forward_dict['left'].get('attention',[[None]])[0][index]
+            try:
+                attention_map = forward_dict['left'].get('attention',[[None]])[0][index]
+            except (KeyError, IndexError):
+                attention_map = None
             image_log(segmentation,original,attention_map,palette,experiment,0, normalize=args.attention_normalize)
 
         return  { 'loss':loss.item(),
@@ -71,7 +74,10 @@ def train(device, net, dataloader, val_loader, args, logger, experiment):
                 index = randint(0, len(segmentation) - 1)
                 segmentation = segmentation[index]
                 original = left_original[index]
-                attention_map = forward_dict['left'].get('attention',[[None]])[0][index]
+                try:
+                    attention_map = forward_dict['left'].get('attention',[[None]])[0][index]
+                except (KeyError, IndexError):
+                    attention_map = None
                 image_log(segmentation,original,attention_map,palette,experiment,trainer.state.epoch, normalize=args.attention_normalize)
 
             return  { 'loss':loss.item(),
