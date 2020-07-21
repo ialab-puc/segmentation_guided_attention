@@ -125,7 +125,7 @@ if __name__ == '__main__':
         from train_scripts.sscnn import train
     elif args.model=="rcnn":
         from nets.rcnn import RCnn as Net
-        from train_scripts.rcnn import train
+        from train_scripts.SegRank  import train
     elif args.model == "segrank":
         from nets.SegRank import SegRank as Net
         from train_scripts.SegRank import train

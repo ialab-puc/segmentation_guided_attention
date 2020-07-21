@@ -38,7 +38,10 @@ class RCnn(nn.Module):
         x_rank_right = self.drop(x_rank_right)
         x_rank_left = self.rank_fc_out(x_rank_left)
         x_rank_right = self.rank_fc_out(x_rank_right)
-        return x_rank_left, x_rank_right
+        return {
+            'left': { 'output': x_rank_left},
+            'right': { 'output': x_rank_right}
+        }
 
 if __name__ == '__main__':
     from torchviz import make_dot
