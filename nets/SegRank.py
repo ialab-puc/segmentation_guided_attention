@@ -14,8 +14,6 @@ sys.path.append('segmentation')
 from segmentation.networks.pspnet import Seg_Model
 
 # constants
-IMG_MEAN = np.array((104.00698793,116.66876762,122.67891434), dtype=np.float32)
-IGNORE_LABEL = 255
 NUM_CLASSES = 19
 INPUT_SIZE = '340,480'
 RESTORE_FROM = '../storage/pspnets/CS_scenes_60000.pth'
@@ -26,7 +24,7 @@ warnings.filterwarnings("ignore")
 device = torch.device("cuda:{}".format('0') if torch.cuda.is_available() else "cpu")
 
 class SegRank(nn.Module):
-    def __init__(self,image_size=(340,480), restore=RESTORE_FROM, n_layers=2, n_heads=NUM_CLASSES, n_outputs=1, softmax=True, positive=False):
+    def __init__(self,image_size=(340,480), restore=RESTORE_FROM, n_layers=2, n_heads=NUM_CLASSES, n_outputs=1, softmax=True):
         super(SegRank, self).__init__()
         self.image_h, self.image_w = image_size
         self.seg_net = Seg_Model(num_classes=NUM_CLASSES)
@@ -44,7 +42,6 @@ class SegRank(nn.Module):
         self.seg_dims = self.seg_net(sample)[0].size() # for layer size definitionlayers
         self.attentions = nn.ModuleList([nn.MultiheadAttention(NUM_CLASSES, self.n_heads) for _ in range(self.n_layers)])
         self.output = nn.Linear(self.seg_dims[2]*self.seg_dims[3]*NUM_CLASSES, self.n_outputs)
-        self.activation = nn.Softplus() if positive else None
 
     def forward(self, left_batch, right_batch):
         return {
@@ -63,7 +60,6 @@ class SegRank(nn.Module):
             attn_list.append(attn_weights)
         x = x.permute([1,0,2]).contiguous().view(batch_size,self.seg_dims[2]*self.seg_dims[3]*NUM_CLASSES)
         x = self.output(x)
-        x = self.activation(x) if self.activation is not None else x
         return {
             'output': x,
             'segmentation': seg_output,
