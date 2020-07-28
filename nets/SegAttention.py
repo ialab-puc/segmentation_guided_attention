@@ -53,10 +53,6 @@ class SegAttention(nn.Module):
         self.seg_dims = self.seg_net(sample)[0].size() # for layer size definitionlayers
 
         self.cnn_size  = self.cnn(sample).size()
-
-        print(self.seg_dims)
-        print(self.cnn_size)
-
         self.attentions = nn.ModuleList([nn.MultiheadAttention(embed_dim=NUM_CLASSES, num_heads=self.n_heads, dropout=0, kdim=self.cnn_size[1], vdim=self.cnn_size[1]) for _ in range(self.n_layers)])
         self.output = nn.Linear(self.seg_dims[2]*self.seg_dims[3]*NUM_CLASSES, self.n_outputs)
 

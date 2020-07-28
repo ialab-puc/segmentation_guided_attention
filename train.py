@@ -36,7 +36,7 @@ def arg_parse():
     parser.add_argument('--wd', help="weight decay regularization", default=0.0, type=float)
     parser.add_argument('--num_workers', help="number of workers for data loader", default=4, type=int)
     parser.add_argument('--model_dir', help="directory to load and save models", default='models/', type=str)
-    parser.add_argument('--model', help="model to use, sscnn or rsscnn", default='rcnn', type=str, choices=['rsscnn','sscnn','rcnn', 'segrank', 'attentionrcnn', 'sgrb'])
+    parser.add_argument('--model', help="model to use, sscnn or rsscnn", default='rcnn', type=str, choices=['rsscnn','sscnn','rcnn', 'segrank', 'attentionrcnn', 'sgrb', 'segattn'])
     parser.add_argument('--epoch', help="epoch to load training", default=1, type=int)
     parser.add_argument('--max_epochs', help="maximum training epochs", default=10, type=int)
     parser.add_argument('--cuda_id', help="gpu id", default=0, type=int)
@@ -64,7 +64,7 @@ if __name__ == '__main__':
     logger = logging.getLogger('timer')
     logger.setLevel(logging.WARNING) #set the minimum level of message logging
 
-    if args.model not in  ["segrank", 'sgrb']:
+    if args.model not in  ["segrank", 'sgrb', 'segattn']:
         train_transforms = transforms.Compose([
                 AdaptTransform(transforms.ToPILImage()),
                 AdaptTransform(transforms.Resize((244,244))),
@@ -138,6 +138,11 @@ if __name__ == '__main__':
         from train_scripts.SegRank import train
         import torch.distributed as dist
         dist.init_process_group('gloo', init_method='file:///tmp/tmpfile', rank=0, world_size=1)
+    elif args.model == 'segattn':
+        from nets.SegAttention import SegAttention as Net
+        from train_scripts.SegRank import train
+        import torch.distributed as dist
+        dist.init_process_group('gloo', init_method='file:///tmp/tmpfile', rank=0, world_size=1)
     else:
         from nets.rsscnn import RSsCnn as Net
         from train_scripts.rsscnn import train
@@ -162,6 +167,16 @@ if __name__ == '__main__':
             finetune=args.finetune,
             n_layers=args.n_layers,
             n_heads=args.n_heads,
+        )
+    elif args.model == 'segattn':
+        net = Net(
+            models[args.premodel],
+            image_size=(244,244),
+            finetune=args.finetune,
+            n_layers=args.n_layers,
+            n_heads=args.n_heads,
+            softmax=args.softmax,
+            n_outputs=args.n_outputs
         )
     elif args.model == 'sgrb':
         net = Net(image_size=(244,244))
