@@ -19,7 +19,7 @@ def attention_to_images(image,attention_map,output_size=(244,244), normalize='lo
     cvImage = gray_image(image,output_size)
     attention_map = interp(attention_map).squeeze(1).cpu().detach().numpy()
     ticks=[(attention_map.min()),(attention_map.max())]
-    normalized = global_normalize(cvImage, attention_map) if normalize == 'global' else local_normalize(cvImage, attention_map) 
+    normalized = global_normalize(cvImage, attention_map) if normalize == 'global' else local_normalize(cvImage, attention_map)
     return normalized, ticks
 
 def shape_attention(attention_map):
