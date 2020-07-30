@@ -1,5 +1,5 @@
 import json
-from utils.image_gen import segmentation_to_image, attention_to_images
+from utils.image_gen import segmentation_to_image, attention_to_images, shape_attention
 
 def tb_log(train_metrics,val_metrics,writer,attribute, epoch):
     for key,metric_hash in train_metrics.items():
@@ -20,13 +20,12 @@ def comet_log(metrics, experiment, epoch=None, step=None):
 def comet_image_log(image,image_name,experiment,epoch=None):
     experiment.log_image(image, name=image_name)
 
-
 def image_log(segmentation,original,attention_map,palette,experiment,epoch, normalize='local'):
     if segmentation is not None:
-        seg_img = segmentation_to_image(segmentation,palette)
+        seg_img = segmentation_to_image(segmentation, original, palette)
         comet_image_log(seg_img,f'segmentation_epoch:{epoch}',experiment, epoch=epoch)
     if attention_map is not None:
-        attentions = attention_to_images(original, attention_map, normalize=normalize)
+        attentions, _ = attention_to_images(original, shape_attention(attention_map), normalize=normalize)
         for i,image in enumerate(attentions):
             comet_image_log(image,f'attention_head:{i}_epoch:{epoch}',experiment, epoch=epoch)
     comet_image_log(original,f'original_epoch{epoch}',experiment, epoch=epoch)
