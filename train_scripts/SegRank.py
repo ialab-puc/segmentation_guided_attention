@@ -112,7 +112,7 @@ def train(device, net, dataloader, val_loader, args, logger, experiment):
     trainer = Engine(update)
     evaluator = Engine(inference)
 
-    palette = get_palette(19)
+    palette = get_palette()
     RunningAverage(output_transform=lambda x: x['loss'], device=device).attach(trainer, 'loss')
     RankAccuracy(output_transform=lambda x: (x['rank_left'], x['rank_right'], x['label']), device=device).attach(trainer,'acc')
 

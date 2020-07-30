@@ -2,6 +2,7 @@ from PIL import Image as PILImage
 import numpy as np
 from torch import nn
 import cv2
+from functools import reduce
 
 def segmentation_to_image(segmentation,image,palette, output_size=(244, 244)):
     grayed = gray_image(image,output_size)
@@ -63,26 +64,26 @@ def normalize_attention(attention, mask_value=-1):
     input_max = attention.max()
     return (np.maximum((attention - input_min),0)/(input_max - input_min) * 255).astype('uint8')
 
-def get_palette(num_cls):
-    """ Returns the color map for visualizing the segmentation mask.
-    Args:
-        num_cls: Number of classes
-    Returns:
-        The color map
-    """
-
-    n = num_cls
-    palette = [0] * (n * 3)
-    for j in range(0, n):
-        lab = j
-        palette[j * 3 + 0] = 0
-        palette[j * 3 + 1] = 0
-        palette[j * 3 + 2] = 0
-        i = 0
-        while lab:
-            palette[j * 3 + 0] |= (((lab >> 0) & 1) << (7 - i))
-            palette[j * 3 + 1] |= (((lab >> 1) & 1) << (7 - i))
-            palette[j * 3 + 2] |= (((lab >> 2) & 1) << (7 - i))
-            i += 1
-            lab >>= 3
-    return palette
+def get_palette():
+    labels = [
+        (128, 64,128),
+        (244, 35,232),
+        ( 70, 70, 70),
+        (102,102,156),
+        (190,153,153),
+        (153,153,153),
+        (250,170, 30),
+        (220,220,  0),
+        (107,142, 35),
+        (152,251,152),
+        ( 70,130,180),
+        (220, 20, 60),
+        (255,  0,  0),
+        (  0,  0,142),
+        (  0,  0, 70),
+        (  0, 60,100),
+        (  0, 80,100),
+        (  0,  0,230),
+        (119, 11, 32),
+    ]
+    return reduce(lambda curr, new : curr + list(new), labels, [])
