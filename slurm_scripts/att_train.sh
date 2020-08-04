@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --job-name=attention-rcnn       # Nombre del trabajo
-#SBATCH --output=output/attention_wealthy_%j.log         # Nombre del output (%j se reemplaza por el ID del trabajo
-#SBATCH --error=output/err/attention_wealthy_%j.err          # Output de errores (opcional)
+#SBATCH --output=output/attention_lively_%j.log         # Nombre del output (%j se reemplaza por el ID del trabajo
+#SBATCH --error=output/err/attention_lively_%j.err          # Output de errores (opcional)
 #SBATCH --ntasks=1                   # Correr 2 tareas
 #SBATCH --cpus-per-task=4            # Numero de cores por tarea
 #SBATCH --distribution=cyclic:cyclic # Distribuir las tareas de modo ciclico
@@ -10,15 +10,15 @@
 #SBATCH --mail-type=END,FAIL         # Enviar eventos al mail (NONE, BEGIN, END, FAIL, ALL)
 #SBATCH --mail-user=afcadiz@uc.cl    # El mail del usuario
 #SBATCH --partition=ialab-high        # Se tiene que elegir una partición de nodos con GPU
-#SBATCH --gres=gpu:Geforce-GTX:1       # Usar 2 GPUs (se pueden usar N GPUs de marca especifica de la manera --gres=gpu:marca:N)
+#SBATCH --gres=gpu:1080Ti:1       # Usar 2 GPUs (se pueden usar N GPUs de marca especifica de la manera --gres=gpu:marca:N)
 #SBATCH --nodelist=hydra
-#SBATCH --dependency=afterok:500
+#SBATCH --dependency=afterok:8923
 
 
 pyenv/bin/python3 train.py  --model attentionrcnn \
 --max_epochs 40 \
 --premodel resnet \
---attribute wealthy \
+--attribute lively \
 --wd 0.00001 \
 --lr 0.001  \
 --batch_size 32 \

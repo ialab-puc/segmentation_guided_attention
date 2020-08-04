@@ -10,7 +10,7 @@
 #SBATCH --mail-type=END,FAIL         # Enviar eventos al mail (NONE, BEGIN, END, FAIL, ALL)
 #SBATCH --mail-user=afcadiz@uc.cl    # El mail del usuario
 #SBATCH --partition=ialab-high        # Se tiene que elegir una partición de nodos con GPU
-#SBATCH --gres=gpu:Geforce-GTX:1       # Usar 2 GPUs (se pueden usar N GPUs de marca especifica de la manera --gres=gpu:marca:N)
+#SBATCH --gres=gpu:TitanRTX:1       # Usar 2 GPUs (se pueden usar N GPUs de marca especifica de la manera --gres=gpu:marca:N)
 #SBATCH --nodelist=hydra
 #SBATCH --dependency=afterok:500
 
@@ -31,5 +31,4 @@ pyenv/bin/python3 train.py  --model segattn \
 --eq --cuda \
 --cm \
 --softmax \
---lr_decay \
 --ft
