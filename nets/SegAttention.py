@@ -25,7 +25,7 @@ warnings.filterwarnings("ignore")
 device = torch.device("cuda:{}".format('0') if torch.cuda.is_available() else "cpu")
 
 class SegAttention(nn.Module):
-    def __init__(self, model, image_size=(340,480), finetune=False, restore=RESTORE_FROM, n_layers=2, n_heads=NUM_CLASSES, n_outputs=1, softmax=True):
+    def __init__(self, model, image_size=(340,480), finetune=False, restore=RESTORE_FROM, n_layers=2, n_heads=NUM_CLASSES, softmax=True):
         super(SegAttention, self).__init__()
         self.image_h, self.image_w = image_size
         self.seg_net = Seg_Model(num_classes=NUM_CLASSES)
@@ -41,7 +41,6 @@ class SegAttention(nn.Module):
 
         self.n_layers = n_layers
         self.n_heads = n_heads
-        self.n_outputs = n_outputs
         if restore is not None: self.seg_net.load_state_dict(torch.load(restore, map_location=device))
 
         for param in self.seg_net.parameters():  # freeze segnet params
@@ -60,7 +59,10 @@ class SegAttention(nn.Module):
         self.cnn_size = self.upsample(self.cnn(sample)).size()
  
         self.attentions = nn.ModuleList([nn.MultiheadAttention(embed_dim=self.cnn_size[1], num_heads=self.n_heads, dropout=0.1, kdim=NUM_CLASSES, vdim=self.cnn_size[1]) for _ in range(self.n_layers)])
-        self.output = nn.Linear(self.cnn_size[1]*self.cnn_size[2]*self.cnn_size[3], self.n_outputs)
+        self.fc = nn.Linear(self.cnn_size[1], 1)
+        self.relu = nn.ReLU()
+        self.dropout = nn.Dropout(0.1)
+        self.output = nn.Linear(self.cnn_size[2]*self.cnn_size[3], 1)
 
     def forward(self, left_batch, right_batch):
         return {
@@ -83,7 +85,8 @@ class SegAttention(nn.Module):
         for attention in self.attentions:
             x, attn_weights = attention(x, segmentation, x)
             attn_list.append(attn_weights)
-        x = x.permute([1,0,2]).contiguous().view(batch_size, self.cnn_size[1]*self.cnn_size[2]*self.cnn_size[3])
+        x = x.permute([1,0,2]).contiguous()
+        x = self.dropout(self.relu(self.fc(x))).view(batch_size, self.cnn_size[2]*self.cnn_size[3])
         x = self.output(x)
 
         return {
@@ -102,7 +105,7 @@ if __name__ == '__main__':
     dist.init_process_group('gloo', init_method='file:///tmp/tmpfile', rank=0, world_size=1)
     INPUT_SIZE = '244,244'
     h, w = map(int, INPUT_SIZE.split(','))
-    model = SegAttention(models.resnet50, image_size=(h,w), restore=RESTORE_FROM, n_heads=1, n_layers=1, upsample=True)
+    model = SegAttention(models.resnet50, image_size=(h,w), restore=RESTORE_FROM, n_heads=1, n_layers=1)
     left = torch.randn([3,h,w]).unsqueeze(0).to(device)
     right = torch.randn([3,h,w]).unsqueeze(0).to(device)
     model.eval()
