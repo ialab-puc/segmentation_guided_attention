@@ -1,12 +1,13 @@
 import torch
 import numpy as np
-import pandas as pd
+import json
 from torchvision import transforms
 from torch.utils.data import DataLoader
 import torch.distributed as dist
 
 from nets.SegRank import SegRank
 from data import PlacePulseDataset, AdaptTransform
+from utils.image_gen import shape_attention, masked_attention_images
 import seg_transforms
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -14,8 +15,8 @@ dist.init_process_group('gloo', init_method='file:///tmp/tmpfile', rank=0, world
 PLACE_PULSE_PATH ='votes'
 IMAGES_PATH= '../datasets/placepulse/'
 MODELS = {
-    'wealthy':'../storage/models_seg/segrank_resnet_wealthy_15_reg_model_0.6167474968710889.pth'
-    #'depressing': '../storage/models_seg/segrank_resnet_depressing_15_acc_model_0.6215900597907325.pth'
+    'wealthy':'../storage/models_seg/segrank_resnet_wealthy_15_acc_model_0.6199546307884856.pth',
+    'depressing': '../storage/models_seg/segrank_resnet_depressing_15_acc_model_0.6215900597907325.pth'
     #'safety': '../storage/models_seg/segrank_resnet_safety_15_model_34.pth',
     #'boring': '../storage/models_seg/segrank_resnet_boring_15_model_14.pth',
     #'lively': '../storage/models_seg/segrank_resnet_lively_15_model_20.pth',
@@ -35,8 +36,18 @@ transformers = transforms.Compose([
         AdaptTransform(seg_transforms.ToTorchDims())
         ])
 
+def generate_batch_stats(ids,forward_dict, output_dict, attribute):
+    for i in range(len(ids)):
+        if ids[i] not in output_dict:
+            output_dict[ids[i]] = {'id':ids[i]}
+        image_dict = output_dict[ids[i]]
+        if attribute not in image_dict:
+            image_dict[attribute] = {}
+            image_dict[attribute]['score'] = float(forward_dict['output'].squeeze().cpu().numpy()[i])
+
+
 f = open('test.txt', 'w')
-df = None
+image_hash = {}
 for attribute, model in MODELS.items():
 
     dataset=PlacePulseDataset(
@@ -56,20 +67,20 @@ for attribute, model in MODELS.items():
     net.eval()
     f.write(f'loaded {model}\n')
     f.flush()
-    image_hash = {}
+    
     for index,batch in enumerate(loader):
         input_left, input_right, label, left_id, right_id = batch['left_image'].to(device), batch['right_image'].to(device), batch['winner'].to(device), batch['left_id'], batch['right_id']
         with torch.no_grad():
             forward_dict = net(input_left,input_right)
-        output_rank_left, output_rank_right =  forward_dict['left']['output'], forward_dict['right']['output']
-        for i in range(len(left_id)):
-            if left_id[i] not in image_hash: image_hash[left_id[i]] = output_rank_left.squeeze().cpu().numpy()[i]
-            if right_id[i] not in image_hash: image_hash[right_id[i]] = output_rank_right.squeeze().cpu().numpy()[i]
+        generate_batch_stats(left_id, forward_dict['left'], image_hash, attribute)
+        generate_batch_stats(right_id, forward_dict['right'], image_hash, attribute)
         f.write(f'{index}/{len(loader)}\n')
         f.flush()
-    if df is None:
-        df=pd.DataFrame.from_dict(image_hash, orient='index', columns=[attribute])
-    else:
-        df=df.join(pd.DataFrame.from_dict(image_hash, orient='index', columns=[attribute]),how='outer')
-    df.to_csv('rank.csv', index_label='id')
+        if index == 2: break
+
+    with open('output.jsonl', 'w') as outfile:
+        for _id, _hash in image_hash.items():
+            json.dump(_hash, outfile)
+            outfile.write('\n')
+
 f.close()

@@ -23,6 +23,17 @@ def attention_to_images(image,attention_map,output_size=(244,244), normalize='lo
     normalized = global_normalize(cvImage, attention_map) if normalize == 'global' else local_normalize(cvImage, attention_map)
     return normalized, ticks
 
+def masked_attention_images(original,segmentation, attention_map, output_size=(244,244)):
+    interp = nn.Upsample(size=output_size, mode='bilinear', align_corners=True)
+    seg= interp(segmentation.unsqueeze(0)).permute([0,1,2,3]).squeeze(0)
+    seg = torch.from_numpy(np.asarray(np.argmax(seg, axis=0), dtype=np.uint8)).long()
+    seg = torch.nn.functional.one_hot(seg, num_classes=19).permute([2,0,1]).float()
+    attention_matrix = interp(attention_map).squeeze()
+    masked = torch.mul(seg, attention_matrix).numpy()
+    cvImage = gray_image(original,output_size)
+    ticks = [np.array([masked.min(), masked.max()])] * masked.shape[0]
+    return masked, seg, np.array(global_normalize(cvImage, masked, 0)), ticks
+
 def shape_attention(attention_map):
     attention_map = attention_map.mean(dim=1, keepdim=True).permute([0,2,1])
     attention_size = attention_map.size()
