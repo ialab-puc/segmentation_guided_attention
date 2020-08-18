@@ -1,3 +1,4 @@
+import torch
 from PIL import Image as PILImage
 import numpy as np
 from torch import nn
@@ -35,10 +36,10 @@ def masked_attention_images(original,segmentation, attention_map, output_size=(2
     return masked, seg, np.array(global_normalize(cvImage, masked, 0)), ticks
 
 def shape_attention(attention_map):
-    attention_map = attention_map.mean(dim=1, keepdim=True).permute([0,2,1])
+    attention_map = attention_map.mean(dim=1, keepdim=True)
     attention_size = attention_map.size()
-    dim = int(attention_size[1]**(0.5))
-    attention_map = attention_map.permute([0,2,1]).view((attention_size[0],1,dim,dim))
+    dim = int(attention_size[2]**(0.5))
+    attention_map = attention_map.view((attention_size[0],1,dim,dim))
     return attention_map
 
 def gray_image(image,output_size):

@@ -11,7 +11,7 @@
 #SBATCH --mail-user=afcadiz@uc.cl    # El mail del usuario
 #SBATCH --partition=ialab-high        # Se tiene que elegir una partición de nodos con GPU
 #SBATCH --gres=gpu:1       # Usar 2 GPUs (se pueden usar N GPUs de marca especifica de la manera --gres=gpu:marca:N
-#SBATCH --nodelist=grievous
+
 
 pyenv/bin/python3 rank_validation.py
 

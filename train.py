@@ -26,7 +26,7 @@ def arg_parse():
     parser.add_argument('--dataset', help="dataset images directory path", default="placepulse/", type=str)
     parser.add_argument('--attribute', help="placepulse attribute to train on", default="wealthy", type=str,  choices=['wealthy','lively', 'depressing', 'safety','boring','beautiful','all'])
     parser.add_argument('--batch_size', help="batch size", default=32, type=int)
-    parser.add_argument('--n_layers', help="number of attention layers for segrank", default=2, type=int)
+    parser.add_argument('--n_layers', help="number of attention layers for segrank", default=1, type=int)
     parser.add_argument('--n_heads', help="number of attention heads for segrank", default=1, type=int)
     parser.add_argument('--n_outputs', help="number of outputs for segrank", default=1, type=int)
     parser.add_argument('--softmax', help="use softmax on Pspnet", action='store_true')
