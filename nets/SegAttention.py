@@ -56,13 +56,13 @@ class SegAttention(nn.Module):
             nn.ConvTranspose2d(self.cnn_size[1],self.cnn_size[1], kernel_size=3, stride=2, padding=1, dilation=1, output_padding=1),
             nn.ConvTranspose2d(self.cnn_size[1],self.cnn_size[1], kernel_size=3, stride=2, padding=1, dilation=1)
             ])
-        self.cnn_size = self.upsample(self.cnn(sample)).size()
+        # self.cnn_size = self.upsample(self.cnn(sample)).size()
  
-        self.attentions = nn.ModuleList([nn.MultiheadAttention(embed_dim=self.cnn_size[1], num_heads=self.n_heads, dropout=0.1, kdim=NUM_CLASSES, vdim=self.cnn_size[1]) for _ in range(self.n_layers)])
-        self.fc = nn.Linear(self.cnn_size[1], 1)
-        self.relu = nn.ReLU()
-        self.dropout = nn.Dropout(0.1)
-        self.output = nn.Linear(self.cnn_size[2]*self.cnn_size[3], 1)
+        self.attentions = nn.ModuleList([nn.MultiheadAttention(embed_dim=NUM_CLASSES, num_heads=self.n_heads, dropout=0.1 ,kdim=self.cnn_size[1], vdim=self.cnn_size[1]) for _ in range(self.n_layers)])
+        self.fc = nn.Linear(NUM_CLASSES*self.seg_dims[2]*self.seg_dims[3], 256)
+        self.activation = nn.ELU()
+        self.dropout = nn.Dropout()
+        self.output = nn.Linear(256, 1)
 
     def forward(self, left_batch, right_batch):
         return {
@@ -78,15 +78,16 @@ class SegAttention(nn.Module):
         segmentation = seg_output_permuted.contiguous().view(self.seg_dims[2]*self.seg_dims[3],batch_size, NUM_CLASSES)
 
         x = self.cnn(batch)
-        x = self.upsample(x)
+        # x = self.upsample(x)
         x = x.permute([2,3,0,1])
         x = x.view(self.cnn_size[2]*self.cnn_size[3],batch_size,self.cnn_size[1])
         attn_list = []
         for attention in self.attentions:
-            x, attn_weights = attention(x, segmentation, x)
+            x, attn_weights = attention(segmentation, x, x)
             attn_list.append(attn_weights)
-        x = x.permute([1,0,2]).contiguous()
-        x = self.dropout(self.relu(self.fc(x))).view(batch_size, self.cnn_size[2]*self.cnn_size[3])
+        print(x.size())
+        x = x.permute([1,0,2]).contiguous().view(batch_size, NUM_CLASSES*self.seg_dims[2]*self.seg_dims[3])
+        x = self.dropout(self.activation(self.fc(x)))
         x = self.output(x)
 
         return {
@@ -102,6 +103,8 @@ class SegAttention(nn.Module):
 if __name__ == '__main__':
 
     import torch.distributed as dist
+    torch.set_printoptions(precision=10)
+
     dist.init_process_group('gloo', init_method='file:///tmp/tmpfile', rank=0, world_size=1)
     INPUT_SIZE = '244,244'
     h, w = map(int, INPUT_SIZE.split(','))
