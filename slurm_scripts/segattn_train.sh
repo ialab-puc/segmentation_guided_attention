@@ -10,18 +10,20 @@
 #SBATCH --mail-type=END,FAIL         # Enviar eventos al mail (NONE, BEGIN, END, FAIL, ALL)
 #SBATCH --mail-user=afcadiz@uc.cl    # El mail del usuario
 #SBATCH --partition=ialab-high        # Se tiene que elegir una partición de nodos con GPU
-#SBATCH --gres=gpu:TitanRTX:1       # Usar 2 GPUs (se pueden usar N GPUs de marca especifica de la manera --gres=gpu:marca:N)
-#SBATCH --nodelist=hydra
+#SBATCH --gres=gpu:1080Ti:1       # Usar 2 GPUs (se pueden usar N GPUs de marca especifica de la manera --gres=gpu:marca:N)
 #SBATCH --dependency=afterok:500
 
+export PATH=$PATH:/usr/local/cuda-10.0/bin
+export CUDADIR=/usr/local/cuda-10.0
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/cuda-10.0/lib64
 
 pyenv/bin/python3 train.py  --model segattn \
 --max_epochs 40 \
 --premodel resnet \
 --attribute wealthy \
---wd 0.00001 \
+--wd 0 \
 --lr 0.001  \
---batch_size 32 \
+--batch_size 16 \
 --dataset ../datasets/placepulse  \
 --model_dir ../storage/models_seg  \
 --tag segattn \
@@ -31,4 +33,5 @@ pyenv/bin/python3 train.py  --model segattn \
 --eq --cuda \
 --cm \
 --softmax \
+--pbar \
 --ft
