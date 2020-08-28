@@ -34,7 +34,7 @@ class SegAttention(nn.Module):
         try:
             self.cnn = model(pretrained=True).features
         except AttributeError:
-            self.cnn = nn.Sequential(*list(model(pretrained=True).children())[:-2])
+            self.cnn = nn.Sequential(*list(model(pretrained=True).children())[:-3])
         if not finetune:
             for param in self.cnn.parameters():  # freeze cnn params
                 param.requires_grad = False
@@ -51,14 +51,11 @@ class SegAttention(nn.Module):
         self.seg_dims = self.seg_net(sample)[0].size() # for layer size definitionlayers
 
         self.cnn_size  = self.cnn(sample).size()
-
-        self.upsample = nn.Sequential(*[
-            nn.ConvTranspose2d(self.cnn_size[1],self.cnn_size[1], kernel_size=3, stride=2, padding=1, dilation=1, output_padding=1),
-            nn.ConvTranspose2d(self.cnn_size[1],self.cnn_size[1], kernel_size=3, stride=2, padding=1, dilation=1)
-            ])
-        # self.cnn_size = self.upsample(self.cnn(sample)).size()
+        # self.upsample = nn.Upsample((self.seg_dims[2], self.seg_dims[3]))
+        self.upsample = nn.ConvTranspose2d(self.cnn_size[1],self.cnn_size[1], kernel_size=3, stride=2, padding=1, dilation=1)
+        self.cnn_size = self.upsample(self.cnn(sample)).size()
  
-        self.attentions = nn.ModuleList([nn.MultiheadAttention(embed_dim=NUM_CLASSES, num_heads=self.n_heads, dropout=0.1 ,kdim=self.cnn_size[1], vdim=self.cnn_size[1]) for _ in range(self.n_layers)])
+        self.attentions = nn.ModuleList([nn.MultiheadAttention(embed_dim=NUM_CLASSES, num_heads=self.n_heads, dropout=0.1 ,kdim=NUM_CLASSES, vdim=self.cnn_size[1], qdim=self.cnn_size[1]) for _ in range(self.n_layers)])
         self.fc = nn.Linear(NUM_CLASSES*self.seg_dims[2]*self.seg_dims[3], 256)
         self.activation = nn.ELU()
         self.dropout = nn.Dropout()
@@ -78,14 +75,13 @@ class SegAttention(nn.Module):
         segmentation = seg_output_permuted.contiguous().view(self.seg_dims[2]*self.seg_dims[3],batch_size, NUM_CLASSES)
 
         x = self.cnn(batch)
-        # x = self.upsample(x)
+        x = self.upsample(x)
         x = x.permute([2,3,0,1])
         x = x.view(self.cnn_size[2]*self.cnn_size[3],batch_size,self.cnn_size[1])
         attn_list = []
         for attention in self.attentions:
-            x, attn_weights = attention(segmentation, x, x)
+            x, attn_weights = attention(x, segmentation, x)
             attn_list.append(attn_weights)
-        print(x.size())
         x = x.permute([1,0,2]).contiguous().view(batch_size, NUM_CLASSES*self.seg_dims[2]*self.seg_dims[3])
         x = self.dropout(self.activation(self.fc(x)))
         x = self.output(x)
