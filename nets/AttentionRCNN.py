@@ -21,7 +21,7 @@ class AttentionRCNN(nn.Module):
         output_size = self.cnn(x).size()
         self.dims = output_size[1]*2
         self.cnn_size = output_size
-        self.attentions = nn.ModuleList([nn.MultiheadAttention(self.cnn_size[1], self.n_heads) for _ in range(self.n_layers)])
+        self.attentions = nn.ModuleList([nn.MultiheadAttention(self.cnn_size[1], self.n_heads, dropout=0.3,) for _ in range(self.n_layers)])
         
         self.rank_fc = nn.Linear(self.cnn_size[2]*self.cnn_size[3]*self.cnn_size[1], 500)
         self.relu = nn.ReLU()
@@ -37,6 +37,7 @@ class AttentionRCNN(nn.Module):
     def single_forward(self,image):
         batch_size = image.size()[0]
         x = self.cnn(image)
+        x = self.drop(x)
         x = x.permute([2,3,0,1])
         x = x.view(self.cnn_size[2]*self.cnn_size[3],batch_size,self.cnn_size[1])
         attn_list = []

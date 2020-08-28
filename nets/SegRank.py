@@ -15,7 +15,6 @@ from segmentation.networks.pspnet import Seg_Model
 
 # constants
 NUM_CLASSES = 19
-INPUT_SIZE = '340,480'
 RESTORE_FROM = '../storage/pspnets/CS_scenes_60000.pth'
 
 import warnings
@@ -30,6 +29,7 @@ class SegRank(nn.Module):
         self.seg_net = Seg_Model(num_classes=NUM_CLASSES)
         self.seg_net.eval() # FIXME: code does not run without this
         self.softmax = nn.Softmax(dim=1) if softmax else None
+        self.drop = nn.Dropout2d(0.1)
         self.n_layers = n_layers
         self.n_heads = n_heads
         self.n_outputs = n_outputs
@@ -52,6 +52,7 @@ class SegRank(nn.Module):
     def single_forward(self, batch):
         batch_size = batch.size()[0]
         seg_output =  self.softmax(self.seg_net(batch)[0]) if self.softmax is not None else self.seg_net(batch)[0]
+        seg_output = self.drop(seg_output)
         seg_output_permuted = seg_output.permute([2,3,0,1])
         x = seg_output_permuted.contiguous().view(self.seg_dims[2]*self.seg_dims[3],batch_size, NUM_CLASSES)
         attn_list = []
@@ -74,9 +75,9 @@ if __name__ == '__main__':
 
     import torch.distributed as dist
     dist.init_process_group('gloo', init_method='file:///tmp/tmpfile', rank=0, world_size=1)
-
+    INPUT_SIZE = '244,244'
     h, w = map(int, INPUT_SIZE.split(','))
-    model = SegRank(restore=RESTORE_FROM)
+    model = SegRank(image_size=(h, w),restore=RESTORE_FROM, n_layers=1, n_heads=1)
     left = torch.randn([3,h,w]).unsqueeze(0).to(device)
     right = torch.randn([3,h,w]).unsqueeze(0).to(device)
     model.eval()
