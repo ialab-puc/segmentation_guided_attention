@@ -68,8 +68,7 @@ def train(device, net, dataloader, val_loader, args, logger, experiment):
                 loss = compute_multiple_ranking_loss(output_rank_left, output_rank_right, label, rank_crit, attribute)
             else:
                 loss = compute_ranking_loss(output_rank_left, output_rank_right, label, rank_crit)
-            log_iteration = randint(1, len(val_loader))
-            if evaluator.state.iteration == log_iteration:
+            if evaluator.state.iteration == 1:
                 segmentation = forward_dict['left'].get('segmentation',[None])
                 index = randint(0, len(segmentation) - 1)
                 segmentation = segmentation[index]
