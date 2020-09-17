@@ -31,6 +31,7 @@ class SegAttention(nn.Module):
         self.seg_net = Seg_Model(num_classes=NUM_CLASSES)
         self.seg_net.eval() 
         self.softmax = nn.Softmax(dim=1) if softmax else None
+        self.semantic_drop = nn.Dropout2d(0.3)
         try:
             self.cnn = model(pretrained=True).features
         except AttributeError:
@@ -41,6 +42,7 @@ class SegAttention(nn.Module):
 
         self.n_layers = n_layers
         self.n_heads = n_heads
+        self.hidden_dim = NUM_CLASSES
         if restore is not None: self.seg_net.load_state_dict(torch.load(restore, map_location=device))
 
         for param in self.seg_net.parameters():  # freeze segnet params
@@ -55,10 +57,10 @@ class SegAttention(nn.Module):
         self.upsample = nn.ConvTranspose2d(self.cnn_size[1],self.cnn_size[1], kernel_size=3, stride=2, padding=1, dilation=1)
         self.cnn_size = self.upsample(self.cnn(sample)).size()
  
-        self.attentions = nn.ModuleList([nn.MultiheadAttention(embed_dim=NUM_CLASSES, num_heads=self.n_heads, dropout=0.1 ,kdim=NUM_CLASSES, vdim=self.cnn_size[1], qdim=self.cnn_size[1]) for _ in range(self.n_layers)])
-        self.fc = nn.Linear(NUM_CLASSES*self.seg_dims[2]*self.seg_dims[3], 256)
+        self.attentions = nn.ModuleList([nn.MultiheadAttention(embed_dim=self.hidden_dim, num_heads=self.n_heads, dropout=0.1 ,kdim=NUM_CLASSES, vdim=self.cnn_size[1], qdim=self.cnn_size[1]) for _ in range(self.n_layers)])
+        self.fc = nn.Linear(self.hidden_dim*self.seg_dims[2]*self.seg_dims[3], 256)
         self.activation = nn.ELU()
-        self.dropout = nn.Dropout()
+        self.dropout = nn.Dropout(0.1)
         self.output = nn.Linear(256, 1)
 
     def forward(self, left_batch, right_batch):
@@ -71,6 +73,7 @@ class SegAttention(nn.Module):
         batch_size = batch.size()[0]
 
         seg_output =  self.softmax(self.seg_net(batch)[0]) if self.softmax is not None else self.seg_net(batch)[0]
+        seg_output = self.semantic_drop(seg_output)
         seg_output_permuted = seg_output.permute([2,3,0,1])
         segmentation = seg_output_permuted.contiguous().view(self.seg_dims[2]*self.seg_dims[3],batch_size, NUM_CLASSES)
 
@@ -82,7 +85,7 @@ class SegAttention(nn.Module):
         for attention in self.attentions:
             x, attn_weights = attention(x, segmentation, x)
             attn_list.append(attn_weights)
-        x = x.permute([1,0,2]).contiguous().view(batch_size, NUM_CLASSES*self.seg_dims[2]*self.seg_dims[3])
+        x = x.permute([1,0,2]).contiguous().view(batch_size, self.hidden_dim*self.seg_dims[2]*self.seg_dims[3])
         x = self.dropout(self.activation(self.fc(x)))
         x = self.output(x)
 
