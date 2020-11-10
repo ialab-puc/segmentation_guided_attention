@@ -51,12 +51,11 @@ class SegAttention(nn.Module):
         sample = torch.randn([3,self.image_h,self.image_w]).unsqueeze(0)
 
         self.seg_dims = self.seg_net(sample)[0].size() # for layer size definitionlayers
-
         self.cnn_size  = self.cnn(sample).size()
+
         # self.upsample = nn.Upsample((self.seg_dims[2], self.seg_dims[3]))
         self.upsample = nn.ConvTranspose2d(self.cnn_size[1],self.cnn_size[1], kernel_size=3, stride=2, padding=1, dilation=1)
         self.cnn_size = self.upsample(self.cnn(sample)).size()
- 
         self.attentions = nn.ModuleList([nn.MultiheadAttention(embed_dim=self.hidden_dim, num_heads=self.n_heads, dropout=0.1 ,kdim=NUM_CLASSES, vdim=self.cnn_size[1], qdim=self.cnn_size[1]) for _ in range(self.n_layers)])
         self.fc = nn.Linear(self.hidden_dim*self.seg_dims[2]*self.seg_dims[3], 256)
         self.activation = nn.ELU()
@@ -105,11 +104,11 @@ if __name__ == '__main__':
     torch.set_printoptions(precision=10)
 
     dist.init_process_group('gloo', init_method='file:///tmp/tmpfile', rank=0, world_size=1)
-    INPUT_SIZE = '244,244'
+    INPUT_SIZE = '340,480'
     h, w = map(int, INPUT_SIZE.split(','))
     model = SegAttention(models.resnet50, image_size=(h,w), restore=RESTORE_FROM, n_heads=1, n_layers=1)
     left = torch.randn([3,h,w]).unsqueeze(0).to(device)
     right = torch.randn([3,h,w]).unsqueeze(0).to(device)
     model.eval()
     model.to(device)
-    model(left, right)
+    print(model(left, right)['left']['segmentation'][0].size())

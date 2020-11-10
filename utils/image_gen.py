@@ -35,12 +35,18 @@ def masked_attention_images(original,segmentation, attention_map, output_size=(2
     ticks = [np.array([masked.min(), masked.max()])] * masked.shape[0]
     return masked, seg, np.array(global_normalize(cvImage, masked, 0)), ticks
 
-def shape_attention(attention_map):
+def shape_attention(attention_map, dim=None):
     attention_map = attention_map.mean(dim=1, keepdim=True)
     attention_size = attention_map.size()
-    dim = int(attention_size[2]**(0.5))
-    attention_map = attention_map.view((attention_size[0],1,dim,dim))
+    if dim is None:
+        single_dim = int(attention_size[2]**(0.5))
+        dim = (single_dim,single_dim)
+    attention_map = attention_map.view((attention_size[0],1,dim[0],dim[1]))
     return attention_map
+
+def clear_zeros(attention):
+    _min = np.where(attention != 0.0, attention, np.inf).min()
+    return np.where(attention != 0.0, attention, _min)
 
 def gray_image(image,output_size):
     cvImage = cv2.cvtColor(image.cpu().numpy(), cv2.COLOR_RGB2BGR)

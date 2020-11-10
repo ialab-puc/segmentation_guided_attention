@@ -10,7 +10,7 @@ from ignite.handlers import ModelCheckpoint
 from random import randint
 from PIL import Image as PILImage
 from utils.ranking import *
-from utils.log import console_log, comet_log, comet_image_log, image_log
+from utils.log import console_log, comet_log, image_log
 from utils.image_gen import get_palette
 from utils.accuracy import RankAccuracy
 from loss import RankingLoss, LogSumExpLoss, VarianceRegularizer, RegularizedLoss
@@ -48,7 +48,7 @@ def train(device, net, dataloader, val_loader, args, logger, experiment):
                 attention_map = forward_dict['left'].get('attention',[[None]])[0][index]
             except (KeyError, IndexError):
                 attention_map = None
-            image_log(segmentation,original,attention_map,palette,experiment,0, normalize=args.attention_normalize)
+            image_log(segmentation,original,attention_map,palette,experiment,0, normalize=args.attention_normalize, dim=REDUCED_DIM)
 
         return  { 'loss':loss.item(),
                 'rank_left': output_rank_left,
@@ -77,7 +77,7 @@ def train(device, net, dataloader, val_loader, args, logger, experiment):
                     attention_map = forward_dict['left'].get('attention',[[None]])[0][index]
                 except (KeyError, IndexError):
                     attention_map = None
-                image_log(segmentation,original,attention_map,palette,experiment,trainer.state.epoch, normalize=args.attention_normalize)
+                image_log(segmentation,original,attention_map,palette,experiment,trainer.state.epoch, normalize=args.attention_normalize, dim=REDUCED_DIM)
 
             return  { 'loss':loss.item(),
                 'rank_left': output_rank_left,
@@ -110,7 +110,7 @@ def train(device, net, dataloader, val_loader, args, logger, experiment):
 
     trainer = Engine(update)
     evaluator = Engine(inference)
-
+    REDUCED_DIM=(43,61)
     palette = get_palette()
     RunningAverage(output_transform=lambda x: x['loss'], device=device).attach(trainer, 'loss')
     RankAccuracy(output_transform=lambda x: (x['rank_left'], x['rank_right'], x['label']), device=device).attach(trainer,'acc')

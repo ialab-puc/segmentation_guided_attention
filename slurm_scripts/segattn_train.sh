@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --job-name=segattn-rcnn       # Nombre del trabajo
-#SBATCH --output=output/segattn_safety_%j.log         # Nombre del output (%j se reemplaza por el ID del trabajo
-#SBATCH --error=output/err/segattn_safety_%j.err          # Output de errores (opcional)
+#SBATCH --output=output/segattn_wealthy_%j.log         # Nombre del output (%j se reemplaza por el ID del trabajo
+#SBATCH --error=output/err/segattn_wealthy_%j.err          # Output de errores (opcional)
 #SBATCH --ntasks=1                   # Correr 2 tareas
 #SBATCH --cpus-per-task=4            # Numero de cores por tarea
 #SBATCH --distribution=cyclic:cyclic # Distribuir las tareas de modo ciclico
@@ -20,13 +20,13 @@ export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/cuda-10.0/lib64
 pyenv/bin/python3 train.py  --model segattn \
 --max_epochs 30 \
 --premodel resnet \
---attribute safety \
+--attribute wealthy \
 --wd 0 \
 --lr 0.001  \
---batch_size 32 \
+--batch_size 4 \
 --dataset ../datasets/placepulse  \
 --model_dir ../storage/models_seg  \
---tag segattn \
+--tag large_images \
 --csv votes/ \
 --attention_normalize local \
 --n_layers 1 --n_heads 1 --n_outputs 1 \
