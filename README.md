@@ -1,5 +1,5 @@
-# Pytorch the city
-Pytorch implementation of the paper [Deep Learning the City : Quantifying Urban Perception At A Global Scale](https://arxiv.org/abs/1608.01769).
+# Segmentation guided attention
+Pytorch implementation for the paper: Reconciling explainability and performance in neural networks by means of semantic segmentation-guided feature attention:An application to urban space perception (unpublished).
 
 ## Requirements
 
